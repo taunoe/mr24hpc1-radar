@@ -6,19 +6,27 @@ Radar_MR24HPC1::Radar_MR24HPC1(Stream *s)
   this->is_new_data = false;
 }
 
-// Receive data and process
+/*
+  Receive radar data
+*/ 
 void Radar_MR24HPC1::read() {
   while (stream->available()) {
+
     if(stream->read() == HEAD1) {
+
       if(stream->read() == HEAD2) {
+        // Read data
         data_len = stream->readBytesUntil(END2, data, 20);
 
         if (data_len > 0 && data_len < 20){
           data[data_len] = END2; // last byte
           is_new_data = true;
         }
+
       }
+
     }
+
   }
 }
 
@@ -31,6 +39,7 @@ Adds headers
 void Radar_MR24HPC1::print(int mode) {
   if(is_new_data) {
 
+    // Print headers
     Serial.print(HEAD1, mode);
     Serial.print(' ');
     Serial.print(HEAD2, mode);
@@ -48,7 +57,7 @@ void Radar_MR24HPC1::print(int mode) {
     }
 
     is_new_data = false;
-    data[data_len] = {0}; // set to all zero
+    data[data_len] = {0};  // set data to zero
   }
 }
 
@@ -61,7 +70,7 @@ void Radar_MR24HPC1::print(int mode) {
 void Radar_MR24HPC1::print_hex(const unsigned char* buff, int len) {
   char charVal[4];
 
-  for(int i=0; i<len; i++){
+  for(int i=0; i<=len; i++){
     sprintf(charVal, "%02X", buff[i]);
     Serial.print(charVal);
     Serial.print(' ');
@@ -87,120 +96,94 @@ void Radar_MR24HPC1::print_dec(const unsigned char* buff, int len) {
   Serial.println();
 }
 
+/*
 
-//Parsing data frames
-void Radar_MR24HPC1::HumanStatic_func(bool bodysign /*=false*/){
+*/
+void Radar_MR24HPC1::analys(bool show_bodysign) {
   read();
 
-  status = 0;
-  bodysign_val = 0x00;
-  static_val = 0x00;
-  dynamic_val = 0x00;
-  dis_static = 0x00;
-  dis_move = 0x00;
-  speed = 0x00;
+  if (is_new_data) {
+    Serial.println("Uus:");
+    
+    // Read control word
+    int control_word = data[I_CONTROL_WORD];
 
-  if(is_new_data){
-    switch (data[0]) {
-      case HUMANSTATUS:
-        switch (data[1])
-        {
-          case HUMANEXIST:
-            switch (data[4])
-            {
-              case SOMEBODY:
-                print();
-                status = SOMEONE;
-                break;
-              case NOBODY:
-                print();
-                status = NOONE;
-                break;
-            }
-            break;
-          case HUMANMOVE:
-            switch (data[4])
-            {
-              case NONE:
-                print();
-                status = NOTHING;
-                break;
-              case SOMEBODY_STOP:
-                print();
-                status = SOMEONE_STOP;
-                break;
-              case SOMEBODY_MOVE:
-                print();
-                status = SOMEONE_MOVE;
-                break;
-            }
-            break;
-          case HUMANSIGN:
-            if(bodysign){
-              print();
-              status = HUMANPARA;
-              bodysign_val = data[4];
-            }
-            break;
-          case HUMANDIRECT:
-            switch (data[4])
-            {
-              case NONE:
-                print();
-                status = NOTHING;
-                break;
-              case CA_CLOSE:
-                print();
-                status = SOMEONE_CLOSE;
-                break;
-              case CA_AWAY:
-                print();
-                status = SOMEONE_AWAY;
-                break;
-            }
-            break;
+    print();
+
+    if (control_word == HUMAN_STATUS) {
+      int report = data[I_CMD_WORD];  // Read command word
+
+      if (report == PRESENCE_REPORT) {
+        // Read data byte
+        int d = data[4];  // OCCUPIED, UNOCCUPIED
+        if (d == 0) {
+          status_msg = NOONE;
         }
-        break;
-      case DETAILSTATUS:
-        switch(data[1]){
-          case DETAILINFO:
-            print();
-            status = DETAILMESSAGE;
-            static_val = data[4];
-            dynamic_val = data[5];
-            dis_static = decodeVal_func(data[6]);
-            dis_move = decodeVal_func(data[7]);
-            speed = decodeVal_func(data[8],true);
-            break;
-          case DETAILDIRECT:
-            switch(data[4]){
-              case NONE:
-                print();
-                status = NOTHING;
-                break;
-              case CA_CLOSE:
-                print();
-                status = SOMEONE_CLOSE;
-                break;
-              case CA_AWAY:
-                print();
-                status = SOMEONE_AWAY;
-                break;
-            }
-            break;
-          case DETAILSIGN:
-            if(bodysign){
-              print();
-              status = HUMANPARA;
-              bodysign_val = data[4];
-            }
-            break;
+        else { // == 1
+          status_msg = SOMEONE;
         }
-        break;
+      }
+      else if (report == MOTION_REPORT) {
+        int d = data[4];  // NONE, MOTIONLESS, ACTIVE
+        switch (d) {
+          case NONE:
+            status_msg = NOTHING; break;
+          case MOTIONLESS:
+            status_msg = SOMEONE_STOP; break;
+          case ACTIVE:
+            status_msg = SOMEONE_MOVE; break;
+        }
+      }
+      else if (report == MOVMENT_PARAM) {
+        status_msg = HUMANPARA;
+        bodysign_val = data[4];
+      }
+      else if (report == PROX_REPORT) {
+        int d = data[4]; // NONE, NEAR, FAR
+        switch (d) {
+          case NONE:
+            status_msg = NOTHING; break;
+          case NEAR:
+            status_msg = SOMEONE_CLOSE; break;
+          case FAR:
+            status_msg = SOMEONE_AWAY; break;
+        }
+      }
     }
+    else if (control_word == DETAIL_STATUS) {
+      int report = data[I_CMD_WORD];  // Read command word
+
+      if (report == SENSOR_REPORT) {
+        //int d = data[4];
+        status_msg = DETAILMESSAGE;
+        static_val = data[4];
+        dynamic_val = data[5];
+        dis_static = calgulate_distance(data[6]);
+        dis_move = calgulate_distance(data[7]);
+        speed = calgulate_speed(data[8]);
+      }
+      else if (report == DET_PROX_REPORT) {
+        int d = data[4]; // NONE, NEAR, FAR
+        switch(d) {
+          case NONE:
+            status_msg = NOTHING; break;
+          case NEAR:
+            status_msg = SOMEONE_CLOSE; break;
+          case FAR:
+            status_msg = SOMEONE_AWAY; break;
+        }
+      }
+      else if (report == DET_MOVMENT_PARA) {
+        status_msg = HUMANPARA;
+        bodysign_val = data[4];
+      }
+    }
+
   }
   is_new_data = false;
 }
+
+
 
 //Send data frame
 void Radar_MR24HPC1::write_cmd(const unsigned char* buff, int len, bool cyclic /*=false*/) {
@@ -280,24 +263,25 @@ int Radar_MR24HPC1::reset() {
 }
 
 
+float Radar_MR24HPC1::calgulate_distance(int val) {
+  return val*UNIT;
+}
 
-float Radar_MR24HPC1::decodeVal_func(int val, bool decode){
-  if(!decode) {
-    return val*unit;   //Calculate distance
+float Radar_MR24HPC1::calgulate_speed(int val) {
+  if (val == 0x0A) {
+    return 0;
   }
-  else {                          //Calculate speed
-    if(val == 0x0A) {
-      return 0;
-    }
-    else if(val > 0x0A) {
-      return -((val-10)*unit);   //Away speed is negative
-    }
-    else if(val < 0x0A) {
-      return (val)*unit;         //Approach speed is positive
-    }
+  else if (val > 0x0A) {
+    // Negative speed
+    return -((val-10)*UNIT);
+  }
+  else if (val < 0x0A) {
+    // Positive speed
+    return (val)*UNIT;
   }
   return 0;
 }
+
 
 /*
 Converts the hexadecimal string to an integer
