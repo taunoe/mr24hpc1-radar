@@ -56,8 +56,15 @@
 #define UNIT          0.5        //Calculate unit steps
 
 // Data bytes indexes
-#define I_CONTROL_WORD  0  // Controll word index in data
-#define I_CMD_WORD      1  // Command word index in data
+#define I_HEAD1        0  // Frame header 1
+#define I_HEAD2        1
+#define I_CONTROL_WORD 2  // Controll word index in data
+#define I_CMD_WORD     3  // Command word index in data
+#define I_LENGHT_H     4
+#define I_LENGHT_L     5  // How many bytes of data
+#define I_DATA         6  // Beginning of data bytes
+//
+#define DATA_SIZE     14  // Max data frame size in bytes
 
 // Reset cmd
 #define CMD_LEN 10       // Reset data frame length
@@ -75,28 +82,27 @@ class Radar_MR24HPC1 {
 
     private:
         Stream *stream;               // e.g. SoftwareSerial or Serial1
-        boolean is_new_data;
-        byte data_len;
+        bool is_new_data;
+        uint8_t data_len;
 
-        unsigned char data[20] = {0};  // data returned by the radar up to a maximum length of 20, no header bytes
+        unsigned char data[DATA_SIZE] = {0};  // data returned by the radar up to a maximum length
         int count = 0;
         int checkdata_len = 2;        // Without cyclic sending, number of frames sent
-        void print_hex(const unsigned char* buff, int len);
-        void print_dec(const unsigned char* buff, int len);
-        float calgulate_distance(int val);
-        float calgulate_speed(int val);
 
-        int hex_to_int(const char *hex);
-        char hex_to_char(const char *hex);
+        float calculate_distance(int val);
+        float calculate_speed(int val);
+        int hex_to_int(const unsigned char *hexChar);
+        char hex_to_char(const unsigned char *hex);
 
     public:
         int status_msg = 0;     // Status message
         int bodysign_val = 0;
-        int static_val = 0;     // Spatial static values
-        int dynamic_val = 0;    // Spatial dynamic values
-        float dis_static = 0.0; // Distance to stationary object m
-        float dis_move = 0.0;   // Distance from the moving object m
-        float speed = 0.0;      // Speed of moving object m/s
+
+        int static_energy = 0;     // Spatial static values
+        float static_dist = 0.0;   // Distance to stationary object m
+        int motion_energy = 0;
+        float motion_dist = 0.0;   // Distance from the moving object m
+        float motion_speed = 0.0;  // Speed of moving object m/s
 
         Radar_MR24HPC1(Stream *s);
 
@@ -107,6 +113,11 @@ class Radar_MR24HPC1 {
         int reset();
         int get_id();
         int firm_ver_id();
+        void print_hex(const unsigned char* buff, int len);
+        void print_dec(const unsigned char* buff, int len);
+        // Calculate checksum
+        uint8_t calculate_sum(const unsigned char data[], int size);
+        bool is_data_good(const unsigned char data[]);
 };
 
 #endif

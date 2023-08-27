@@ -7,27 +7,50 @@ Radar_MR24HPC1::Radar_MR24HPC1(Stream *s)
 }
 
 /*
-  Receive radar data
+  Receive radar data and store it in data array
 */ 
 void Radar_MR24HPC1::read() {
+  unsigned char buffer[DATA_SIZE] = {0};
+  uint8_t buff_len = 0;
+
+  // save to buffer
   while (stream->available()) {
-
+    // Data start bytes
     if(stream->read() == HEAD1) {
-
       if(stream->read() == HEAD2) {
         // Read data
-        data_len = stream->readBytesUntil(END2, data, 20);
-
-        if (data_len > 0 && data_len < 20){
-          data[data_len] = END2; // last byte
-          is_new_data = true;
+        // What if data is 0x43?? then its stops!!
+        buff_len = stream->readBytesUntil(END2, buffer, DATA_SIZE);
+        //buff_len = stream->readBytes(buffer, DATA_SIZE);
+        // Kontrollida kas viimane element on õige:
+        //if (buffer[buff_len-1] != END1) {
+        //  Serial.print(" !! False end !! ");
+        //}
+        if (buff_len > 0 && buff_len < DATA_SIZE){
+          buffer[buff_len] = END2; // add last end byte
         }
-
       }
-
     }
-
   }
+
+  // Save to data_frame
+  // Add headers
+  data[0] = HEAD1;
+  data[1] = HEAD2;
+
+  for (int i = 0; i < buff_len+1; i++) {// +1 end2 byte
+    data[i+2] = buffer[i];
+  }
+
+  if (is_data_good(data)) {
+    //Serial.print("Good: ");
+    data_len = buff_len + 3;
+    is_new_data = true;
+  }
+  else {
+    //Serial.println(" Bad: ");
+  }
+
 }
 
 
@@ -38,11 +61,6 @@ Adds headers
 */
 void Radar_MR24HPC1::print(int mode) {
   if(is_new_data) {
-
-    // Print headers
-    Serial.print(HEAD1, mode);
-    Serial.print(' ');
-    Serial.print(HEAD2, mode);
 
     switch (mode) {
       case DEC:
@@ -57,7 +75,7 @@ void Radar_MR24HPC1::print(int mode) {
     }
 
     is_new_data = false;
-    data[data_len] = {0};  // set data to zero
+    data[data_len] = {0};  // set all data to zero
   }
 }
 
@@ -70,7 +88,7 @@ void Radar_MR24HPC1::print(int mode) {
 void Radar_MR24HPC1::print_hex(const unsigned char* buff, int len) {
   char charVal[4];
 
-  for(int i=0; i<=len; i++){
+  for(int i=0; i<len; i++){
     sprintf(charVal, "%02X", buff[i]);
     Serial.print(charVal);
     Serial.print(' ');
@@ -103,19 +121,17 @@ void Radar_MR24HPC1::analys(bool show_bodysign) {
   read();
 
   if (is_new_data) {
-    Serial.println("Uus:");
-    
     // Read control word
     int control_word = data[I_CONTROL_WORD];
 
-    print();
+    //print();
 
     if (control_word == HUMAN_STATUS) {
       int report = data[I_CMD_WORD];  // Read command word
 
       if (report == PRESENCE_REPORT) {
         // Read data byte
-        int d = data[4];  // OCCUPIED, UNOCCUPIED
+        int d = data[I_DATA];  // OCCUPIED, UNOCCUPIED
         if (d == 0) {
           status_msg = NOONE;
         }
@@ -124,7 +140,7 @@ void Radar_MR24HPC1::analys(bool show_bodysign) {
         }
       }
       else if (report == MOTION_REPORT) {
-        int d = data[4];  // NONE, MOTIONLESS, ACTIVE
+        int d = data[I_DATA];  // NONE, MOTIONLESS, ACTIVE
         switch (d) {
           case NONE:
             status_msg = NOTHING; break;
@@ -136,10 +152,10 @@ void Radar_MR24HPC1::analys(bool show_bodysign) {
       }
       else if (report == MOVMENT_PARAM) {
         status_msg = HUMANPARA;
-        bodysign_val = data[4];
+        bodysign_val = data[I_DATA];
       }
       else if (report == PROX_REPORT) {
-        int d = data[4]; // NONE, NEAR, FAR
+        int d = data[I_DATA]; // NONE, NEAR, FAR
         switch (d) {
           case NONE:
             status_msg = NOTHING; break;
@@ -155,15 +171,16 @@ void Radar_MR24HPC1::analys(bool show_bodysign) {
 
       if (report == SENSOR_REPORT) {
         //int d = data[4];
-        status_msg = DETAILMESSAGE;
-        static_val = data[4];
-        dynamic_val = data[5];
-        dis_static = calgulate_distance(data[6]);
-        dis_move = calgulate_distance(data[7]);
-        speed = calgulate_speed(data[8]);
+        status_msg  = DETAILMESSAGE;
+
+        static_energy  = data[I_DATA];
+        static_dist = data[I_DATA + 1];
+        motion_energy = calculate_distance(data[I_DATA + 2]);
+        motion_dist  = calculate_distance(data[I_DATA + 3]);
+        motion_speed = calculate_speed(data[I_DATA + 4]);
       }
       else if (report == DET_PROX_REPORT) {
-        int d = data[4]; // NONE, NEAR, FAR
+        int d = data[I_DATA]; // NONE, NEAR, FAR
         switch(d) {
           case NONE:
             status_msg = NOTHING; break;
@@ -175,7 +192,7 @@ void Radar_MR24HPC1::analys(bool show_bodysign) {
       }
       else if (report == DET_MOVMENT_PARA) {
         status_msg = HUMANPARA;
-        bodysign_val = data[4];
+        bodysign_val = data[I_DATA];
       }
     }
 
@@ -263,11 +280,11 @@ int Radar_MR24HPC1::reset() {
 }
 
 
-float Radar_MR24HPC1::calgulate_distance(int val) {
+float Radar_MR24HPC1::calculate_distance(int val) {
   return val*UNIT;
 }
 
-float Radar_MR24HPC1::calgulate_speed(int val) {
+float Radar_MR24HPC1::calculate_speed(int val) {
   if (val == 0x0A) {
     return 0;
   }
@@ -284,20 +301,66 @@ float Radar_MR24HPC1::calgulate_speed(int val) {
 
 
 /*
-Converts the hexadecimal string to an integer
+ Converts the hexadecimal string to an integer
 */
-int Radar_MR24HPC1::hex_to_int(const char *hex) {
+int Radar_MR24HPC1::hex_to_int(const unsigned char *hexChar) {
   // Use strtol to convert the hexadecimal string to an integer
-  return strtol(hex, NULL, 16);
+  //return strtol(hexChar, NULL, 16);
+  int intValue = 0;
+
+    if (*hexChar >= '0' && *hexChar <= '9') {
+        intValue = *hexChar - '0';
+    } else if (*hexChar >= 'A' && *hexChar <= 'F') {
+        intValue = *hexChar - 'A' + 10;
+    } else if (*hexChar >= 'a' && *hexChar <= 'f') {
+        intValue = *hexChar - 'a' + 10;
+    } else {
+        // Handle invalid input if necessary
+        printf("Invalid hexadecimal character: %c\n", *hexChar);
+    }
+
+    return intValue;
 }
 
 /*
-Converts the hexadecimal string to an char
+ Converts the hexadecimal string to an char
 */
-char Radar_MR24HPC1::hex_to_char(const char *hex) {
+char Radar_MR24HPC1::hex_to_char(const unsigned char *hex) {
   int int_val = hex_to_int(hex);
   // Cast the integer value to a char
   char char_val = (char)int_val;
 
   return char_val;
+}
+
+/*
+ Calcutaltes checksum
+*/
+uint8_t Radar_MR24HPC1::calculate_sum(const unsigned char data[], int size) {
+  uint8_t sum = 0;
+
+  for (int i = 0; i < size; i++) {
+    sum += data[i];
+  }
+
+  return sum;
+}
+
+/*
+ Compare data sum and calculated sum
+*/
+bool Radar_MR24HPC1::is_data_good(const unsigned char data[]) {
+  unsigned char data_lenght_byte = data[I_LENGHT_L];
+
+  int count = I_DATA + data_lenght_byte; // how many bytes total
+
+  uint8_t my_sum = calculate_sum(data, count);
+
+  uint8_t data_sum = data[I_DATA + data_lenght_byte];
+
+  if (data_sum == my_sum) {
+    return true;
+  }
+
+  return false;
 }
