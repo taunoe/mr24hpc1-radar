@@ -2,8 +2,8 @@
 Copyright 2023 Tauno Erik
 */
 
-#ifndef LIB_RADAR_MR24HPC1_RADAR_MR24HPC1_H_
-#define LIB_RADAR_MR24HPC1_RADAR_MR24HPC1_H_
+#ifndef LIB_RADAR_MR24HPC1_SRC_RADAR_MR24HPC1_H_
+#define LIB_RADAR_MR24HPC1_SRC_RADAR_MR24HPC1_H_
 
 // Frame Headers
 #define HEAD1            0x53  // Frame header 1
@@ -89,7 +89,9 @@ class Radar_MR24HPC1 {
     int hex_to_int(const unsigned char *hexChar);
     char hex_to_char(const unsigned char *hex);
     void translate_01();
-    void translate_02(const unsigned char word, int len);
+    void translate_02();
+    void translate_05();
+    void translate_80();
 
  public:
     int status_msg = 0;     // Status message
@@ -122,4 +124,4 @@ class Radar_MR24HPC1 {
     void translate();
 };
 
-#endif  // LIB_RADAR_MR24HPC1_RADAR_MR24HPC1_H_
+#endif  // LIB_RADAR_MR24HPC1_SRC_RADAR_MR24HPC1_H_

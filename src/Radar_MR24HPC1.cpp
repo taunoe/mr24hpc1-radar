@@ -432,16 +432,21 @@ void Radar_MR24HPC1::translate() {
   if (is_new_frame) {
     int control_word = frame[I_CONTROL_WORD];
 
-    int cmd_word = frame[I_CMD_WORD];
-    // int data = frame[I_DATA];
-    int len = frame[I_LENGHT_L];
-
     switch (control_word) {
       case 0x01:
         translate_01();
         break;
-      case 0x02:
-        translate_02(cmd_word, len);
+       case 0x02:
+        translate_02();
+        break;
+      case 0x03:
+        Serial.println("UART upgrade");
+        break;
+      case 0x05:
+        translate_05();
+        break;
+      case 0x80:
+        translate_80();
         break;
       default:
         print();
@@ -471,22 +476,78 @@ translate() helper func
 Controll word 0x02
 Product info
 */
-void Radar_MR24HPC1::translate_02(const unsigned char cmd_word,
-                                  int len) {
+void Radar_MR24HPC1::translate_02() {
+  int cmd_word = frame[I_CMD_WORD];
+  int len = frame[I_LENGHT_L];
+  // int data = frame[I_DATA];
+
   // Product Model
   if (cmd_word == 0xA1) {
-    Serial.print("Product Model");
+    Serial.println("Product Model");
+  } else if (cmd_word == 0xA2) {
+    Serial.println("Product ID");
+  } else if (cmd_word == 0xA3) {
+    Serial.println("Hardware Model");
+  } else if (cmd_word == 0xA3) {
+    Serial.println("Firmware version");
   }
-  // Product ID
-  if (cmd_word == 0xA2) {
-    Serial.print("Product ID");
+}
+
+/*
+translate() helper func
+Controll word 0x05
+Work status
+*/
+void Radar_MR24HPC1::translate_05() {
+  int cmd_word = frame[I_CMD_WORD];
+  // int len = frame[I_LENGHT_L];
+  // int data = frame[I_DATA];
+
+  if (cmd_word == 0x01) {
+      Serial.println("Initialization completed");
+  } else if (cmd_word == 0x07) {
+      Serial.println("Scene settings");
+  } else if (cmd_word == 0x08) {
+      Serial.println("Sensitivity settings");
+  } else if (cmd_word == 0x81) {
+      Serial.println("Initializatio status inquiry");
+  } else if (cmd_word == 0x87) {
+      Serial.println("Scene settings inquiry");
+  } else if (cmd_word == 0x88) {
+      Serial.println("Sensitivity settings inquiry");
   }
-  // Hardware Model
-  if (cmd_word == 0xA3) {
-    Serial.print("Hardware Model");
-  }
-  // Firmware version
-  if (cmd_word == 0xA3) {
-    Serial.print("Firmware version");
-  }
+}
+
+/*
+translate() helper func
+Controll word 0x80
+Human presence
+*/
+void Radar_MR24HPC1::translate_80() {
+  int cmd_word = frame[I_CMD_WORD];
+  // int len = frame[I_LENGHT_L];
+  // int data = frame[I_DATA];
+
+  if (cmd_word == 0x01) {
+      Serial.println("Presence reporting");
+  } else if (cmd_word == 0x02) {
+      Serial.println("Motion reporting");
+  } else if (cmd_word == 0x03) {
+      Serial.println("Body parameter");
+  } else if (cmd_word == 0x0A) {
+      Serial.println("Time settings");
+  } else if (cmd_word == 0x0B) {
+      Serial.println("Proximity");
+  } else if (cmd_word == 0x81) {
+      Serial.println("Presence info");
+  } else if (cmd_word == 0x82) {
+      Serial.println("Motion info");
+  } else if (cmd_word == 0x83) {
+      Serial.println("Body movment");
+  } else if (cmd_word == 0x8A) {
+      Serial.println("Time inquiry");
+  } else if (cmd_word == 0x8B) {
+      Serial.println("Proximity movment");
+  } 
+  
 }
