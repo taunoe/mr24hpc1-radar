@@ -92,7 +92,8 @@ void Radar_MR24HPC1::print_hex(const unsigned char* buff, int len) {
   char charVal[4];
 
   for (int i=0; i < len; i++) {
-    sprintf(charVal, "%02X", buff[i]);
+    // sprintf(charVal, "%02X", buff[i]);
+    snprintf(charVal, sizeof(charVal), "%02X", buff[i]);
     Serial.print(charVal);
     Serial.print(' ');
   }
@@ -109,7 +110,8 @@ void Radar_MR24HPC1::print_dec(const unsigned char* buff, int len) {
   char char_val[4];
 
   for (int i=0; i < len; i++) {
-    sprintf(char_val, "%d", buff[i]);
+    // sprintf(char_val, "%d", buff[i]);
+    snprintf(char_val, sizeof(char_val), "%02X", buff[i]);
     Serial.print(char_val);
     Serial.print(' ');
   }
@@ -119,7 +121,6 @@ void Radar_MR24HPC1::print_dec(const unsigned char* buff, int len) {
 
 /*
 
-*/
 void Radar_MR24HPC1::analys(bool show_bodysign) {
   read();  // ?
 
@@ -203,7 +204,7 @@ void Radar_MR24HPC1::analys(bool show_bodysign) {
   }
   is_new_frame = false;
 }
-
+*/
 
 
 // Send data frame
@@ -375,31 +376,28 @@ bool Radar_MR24HPC1::is_frame_good(const unsigned char f[]) {
   return false;
 }
 
+
 /*
-Turn ON Underlying Open function
+Set Radar Mode: 0 SIMPLE, 1 ADVANCED
 */
-int Radar_MR24HPC1::underlying_on() {
+void Radar_MR24HPC1::set_mode(int mode) {
   const unsigned char on_cmd[CMD_LEN] = {
-    HEAD1, HEAD2, 0x08, 0x00, 0x00, 0x01, 0x01, 0xB6, END1, END2};
+    HEAD1, HEAD2, 0x08, 0x00, 0x00, 0x01, 0x01, 0xB6, END1, END2 };
 
-  stream->write(on_cmd, CMD_LEN);
-  stream->flush();
-
-  return 1;
-}
-
-/*
-Turn OFF Underlying Open function
-*/
-int Radar_MR24HPC1::underlying_off() {
   const unsigned char off_cmd[CMD_LEN] = {
-    HEAD1, HEAD2, 0x08, 0x00, 0x00, 0x01, 0x00, 0xB5, END1, END2};
+    HEAD1, HEAD2, 0x08, 0x00, 0x00, 0x01, 0x00, 0xB5, END1, END2 };
 
-  stream->write(off_cmd, CMD_LEN);
-  stream->flush();
-
-  return 1;
+  if (mode == SIMPLE) {
+    stream->write(off_cmd, CMD_LEN);
+    stream->flush();
+    is_advanced_mode = false;
+  } else if (mode == ADVANCED) {
+    stream->write(on_cmd, CMD_LEN);
+    stream->flush();
+    is_advanced_mode = true;
+  }
 }
+
 
 /*
 Returns Underlying Open function status:
@@ -445,6 +443,9 @@ void Radar_MR24HPC1::translate() {
       case 0x05:
         translate_05();
         break;
+      case 0x08:
+        translate_08();
+        break;
       case 0x80:
         translate_80();
         break;
@@ -477,7 +478,7 @@ Controll word 0x02
 Product info
 */
 void Radar_MR24HPC1::translate_02() {
-  int cmd_word = frame[I_CMD_WORD];
+  // int cmd_word = frame[I_CMD_WORD];
   int len = frame[I_LENGHT_L];
   // int data = frame[I_DATA];
 
@@ -516,6 +517,72 @@ void Radar_MR24HPC1::translate_05() {
   } else if (cmd_word == 0x88) {
       Serial.println("Sensitivity settings inquiry");
   }
+  // Underlying
+  else if (cmd_word == 0x09) {
+      Serial.println("Custom mode setting");
+  } else if (cmd_word == 0x0A) {
+      Serial.println("Custom mode saved");
+  } else if (cmd_word == 0x89) {
+      Serial.println("Custom mode status");
+  }
+}
+
+
+/*
+translate() helper func
+Controll word 0x0
+Underlying open func
+*/
+void Radar_MR24HPC1::translate_08() {
+  int cmd_word = frame[I_CMD_WORD];
+  // int len = frame[I_LENGHT_L];
+  // int data = frame[I_DATA];
+
+  if (cmd_word == 0x00) {
+      Serial.println("Output switch");
+  } else if (cmd_word == 0x01) {
+      Serial.println("Sensor report");
+  } else if (cmd_word == 0x08) {
+      Serial.println("Sensor report");
+  } else if (cmd_word == 0x09) {
+      Serial.println("Trigger threshold settings");
+  } else if (cmd_word == 0x80) {
+      Serial.println("Output switch inquiry");
+  } else if (cmd_word == 0x81) {
+      Serial.println("Static energy");
+  } else if (cmd_word == 0x82) {
+      Serial.println("Motion energy");
+  } else if (cmd_word == 0x83) {
+      Serial.println("Static distance inquiry");
+  } else if (cmd_word == 0x84) {
+      Serial.println("Motion distance inquiry");
+  } else if (cmd_word == 0x85) {
+      Serial.println("Motion speed");
+  } else if (cmd_word == 0x88) {
+      Serial.println("Static Threshold inquiry");
+  } else if (cmd_word == 0x89) {
+      Serial.println("Motion Threshold inquiry");
+  } else if (cmd_word == 0x0A) {
+      Serial.println("Static Detection range setting");
+  } else if (cmd_word == 0x0B) {
+      Serial.println("Motion Detection range setting");
+  } else if (cmd_word == 0x0C) {
+      Serial.println("Trigger time setting");
+  } else if (cmd_word == 0x0D) {
+      Serial.println("Still time setting");
+  } else if (cmd_word == 0x0E) {
+      Serial.println("no persson setting");
+  } else if (cmd_word == 0x8A) {
+      Serial.println("static boundary inquiry");
+  } else if (cmd_word == 0x8B) {
+      Serial.println("motion boundary inquiry");
+  } else if (cmd_word == 0x8C) {
+      Serial.println("motion trigger time inquiry");
+  } else if (cmd_word == 0x8D) {
+      Serial.println("motion to still time inquiry");
+  } else if (cmd_word == 0x8E) {
+      Serial.println("time no person state inquiry");
+  }
 }
 
 /*
@@ -548,6 +615,5 @@ void Radar_MR24HPC1::translate_80() {
       Serial.println("Time inquiry");
   } else if (cmd_word == 0x8B) {
       Serial.println("Proximity movment");
-  } 
-  
+  }
 }

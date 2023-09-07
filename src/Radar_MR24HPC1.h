@@ -73,6 +73,10 @@ Copyright 2023 Tauno Erik
 // Reset cmd
 #define CMD_LEN 10       // Reset data frame length
 
+#define SIMPLE        0
+#define ADVANCED      1
+
+// TODO: simple mode, advandced mode
 
 class Radar_MR24HPC1 {
  private:
@@ -91,9 +95,12 @@ class Radar_MR24HPC1 {
     void translate_01();
     void translate_02();
     void translate_05();
+    void translate_08();
     void translate_80();
 
  public:
+   bool is_advanced_mode = false;
+
     int status_msg = 0;     // Status message
     int bodysign_val = 0;
 
@@ -107,7 +114,11 @@ class Radar_MR24HPC1 {
 
     void read();
     void print(int mode = HEX);
-    void analys(bool show_bodysign);
+
+    void set_mode(int mode);  // 0 SIMPLE, 1 ADVANCED
+    int underlying_status();
+
+    // void analys(bool show_bodysign);
     // checkSetMode_func:
     void write_cmd(const unsigned char* buff, int len, bool cyclic = false);
     int reset();
@@ -118,9 +129,7 @@ class Radar_MR24HPC1 {
     // Calculate checksum
     uint8_t calculate_sum(const unsigned char f[], int size);
     bool is_frame_good(const unsigned char f[]);  // Private
-    int underlying_on();
-    int underlying_off();
-    int underlying_status();
+
     void translate();
 };
 
