@@ -6,8 +6,8 @@ Copyright 2023 Tauno Erik
 #include "Radar_MR24HPC1.h"
 
 Radar_MR24HPC1::Radar_MR24HPC1(Stream *s)
-    : stream(s) {
-  this->is_new_frame = false;
+  : stream(s) {
+    this->is_new_frame = false;
 }
 
 /*
@@ -54,7 +54,6 @@ void Radar_MR24HPC1::read() {
   } else {
   // Serial.println(" Bad: ");
   }
-
 }
 
 
@@ -118,6 +117,18 @@ void Radar_MR24HPC1::print_dec(const unsigned char* buff, int len) {
 
   Serial.println();
 }
+
+
+/*
+Send query to radar
+frame - array of bytes
+len - num of bytes
+*/
+void Radar_MR24HPC1::send_query(const unsigned char *frame, int len) {
+  stream->write(frame, len);
+  stream->flush();
+}
+
 
 /*
 
@@ -240,6 +251,7 @@ void Radar_MR24HPC1::write_cmd(const unsigned char* buff,
 /*
 Return Radar ID
 */
+/*
 int Radar_MR24HPC1::get_id() {
   const unsigned char id_cmd[CMD_LEN] = {
     HEAD1, HEAD2, 0x02, 0xA2, 0x00, 0x01, 0x0F, 0x60, END1, END2};
@@ -258,7 +270,9 @@ int Radar_MR24HPC1::get_id() {
   // TODO: return id
   return 0;
 }
+*/
 
+/*
 int Radar_MR24HPC1::firm_ver_id() {
   const unsigned char firmware_ver_cmd[CMD_LEN] = {
     HEAD1, HEAD2, 0x02, 0xA4, 0x00, 0x01, 0x0F, 0x62, END1, END2};
@@ -277,19 +291,411 @@ int Radar_MR24HPC1::firm_ver_id() {
   // TODO: return id
   return 0;
 }
+*/
 
 /*
-Reset radar
-returns 1
+Send Reset frame
 */
-int Radar_MR24HPC1::reset() {
-  const unsigned char reset_cmd[CMD_LEN] = {
+void Radar_MR24HPC1::send_reset() {
+  const int len = 10;
+  uint8_t frame[len] = {
     HEAD1, HEAD2, 0x01, 0x02, 0x00, 0x01, 0x0F, 0xBF, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
 
-  stream->write(reset_cmd, CMD_LEN);
-  stream->flush();
-  // Serial.println("Radar reset!");
-  return 1;
+  send_query(frame, len);
+}
+
+/*
+Send heartbeat frame
+*/
+void Radar_MR24HPC1::send_heartbeat() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x01, 0x01, 0x00, 0x01, 0x0F, 0x5F, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Send product_model frame
+*/
+void Radar_MR24HPC1::ask_product_model() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x02, 0xA1, 0x00, 0x01, 0x0F, 0xBE, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Send product id frame
+*/
+void Radar_MR24HPC1::ask_product_id() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x02, 0xA2, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Send harware model frame
+*/
+void Radar_MR24HPC1::ask_hardware_model() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x02, 0xA3, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Send firmware_version frame
+*/
+void Radar_MR24HPC1::ask_firmware_version() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x02, 0xA4, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Max Range to recognize human movements
+Simple:
+0x01 4.0-4.5 m detection radius
+0x02 3.5-4.0 m
+0x03 2.5-3.0 m
+0x04 3.0-3.5 m
+Advandced:
+Motion trigger boundary settings
+0x01 0.5m
+0x02 1.0m
+0x03 1.5m
+0x04 2.0m
+0x05 2.5m
+0x06 3.0m
+0x07 3.5m
+0x08 4.0m
+0x09 4.5m
+0x0A 5.0m
+*/
+void Radar_MR24HPC1::set_movement_range(uint8_t range) {
+  const int len = 10;
+
+  if (advanced_mode) {
+    if (range > 0x0A) {
+      range = 0x0A;  // default
+    }
+    uint8_t frame[len] = {
+      HEAD1, HEAD2, 0x08, 0x0B, 0x00, 0x01, range, 0x00, END1, END2};
+  } else {   // Simple mode
+    if (range < 1 || range > 4) {
+      range = 0x01;
+    }
+
+    uint8_t frame[len] = {
+      HEAD1, HEAD2, 0x05, 0x07, 0x00, 0x01, range, 0x00, END1, END2};
+  }
+
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Max Range to recognize static human body
+Simple mode:
+0x01 2.5 m detection radius
+0x02 3.0 m
+0x03 4.0 m
+Asvandced mode:
+Existence perception boundary settings
+0x01 0.5m
+0x02 1.0m
+0x03 1.5m
+0x04 2.0m
+0x05 2.5m
+0x06 3.0m
+0x07 3.5m
+0x08 4.0m
+0x09 4.5m
+0x0A 5.0m
+*/
+void Radar_MR24HPC1::set_static_range(uint8_t range) {
+  const int len = 10;
+
+  if (advanced_mode) {
+    if (range > 0x0A) {
+      range = 0x0A;  // default
+    }
+    uint8_t frame[len] = {
+      HEAD1, HEAD2, 0x08, 0x0A, 0x00, 0x01, range, 0x00, END1, END2};
+  } else {  // Simple mode
+    if (range < 1 || range > 3) {
+      range = 0x03;  // default
+    }
+    uint8_t frame[len] = {
+      HEAD1, HEAD2, 0x05, 0x08, 0x00, 0x01, range, 0x00, END1, END2};
+  }
+
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+
+/*
+Initialization status inquiry
+*/
+void Radar_MR24HPC1::ask_initialization_status() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x05, 0x81, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+scene settings inquiry
+*/
+void Radar_MR24HPC1::ask_movement_range() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x05, 0x87, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+sensitivity settings inquiry
+*/
+void Radar_MR24HPC1::ask_static_range() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x05, 0x88, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Time for entering no person state setting
+0x00 none
+0x01 10s
+0x02 30s
+0x03 1 min
+0x04 2 min
+0x05 5 min
+0x06 10 min
+0x07 30 min
+0x08 60 min
+*/
+void Radar_MR24HPC1::set_absence_trigger_time(uint8_t time) {
+  if (time > 0x08) {
+    time = 0x02;
+  }
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x80, 0x0A, 0x00, 0x01, time, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Presence information inquiry
+*/
+void Radar_MR24HPC1::ask_presence() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x80, 0x81, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+
+/*
+Motion information inquiry
+*/
+void Radar_MR24HPC1::ask_motion_info() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x80, 0x82, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Body movment parameter inquiry
+*/
+void Radar_MR24HPC1::ask_body_parameter() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x80, 0x83, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Time for entering no person state inquiry
+*/
+void Radar_MR24HPC1::ask_absence_trigger_time() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x80, 0x8A, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Proximity inquiry
+*/
+void Radar_MR24HPC1::ask_proximity() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x80, 0x8B, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Underlying open function information
+output switch inquiry
+*/
+void Radar_MR24HPC1::ask_mode() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x08, 0x80, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Existence energy value inquiry
+*/
+void Radar_MR24HPC1::ask_static_energy() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x08, 0x81, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Motion energy value inquiry
+*/
+void Radar_MR24HPC1::ask_motion_energy() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x08, 0x82, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Static distance inquiry
+*/
+void Radar_MR24HPC1::ask_static_distance() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x08, 0x83, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Motion distance inquiry
+*/
+void Radar_MR24HPC1::ask_motion_distance() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x08, 0x84, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Motion speed inquiry
+*/
+void Radar_MR24HPC1::ask_motion_speed() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x05, 0x85, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Advandsed Custom mode inquiry
+0x00 Custom mode is not enabled
+0x01 Custom mode 1
+0x02 Custom mode 2
+0x03 Custom mode 3
+0x04 Custom mode 4
+*/
+void Radar_MR24HPC1::ask_custom_mode() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x05, 0x89, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Advandsed Custom mode setting
+0x01 Custom mode 1
+0x02 Custom mode 2
+0x03 Custom mode 3
+0x04 Custom mode 4
+*/
+void Radar_MR24HPC1::start_custom_mode_settings(uint8_t mode) {
+  if (mode > 0x04) {
+    mode = 0x04;
+  }
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x05, 0x09, 0x00, 0x01, mode, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+End Custom mode settings
+*/
+void Radar_MR24HPC1::end_custom_mode_settings() {
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x05, 0x0A, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+/*
+Existence judgement threshold settings
+Range 0-250
+*/
+void Radar_MR24HPC1::set_static_threshold(uint8_t range) {
+  if (range > 250) {
+    range = 250;
+  }
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x08, 0x08, 0x00, 0x01, range, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
+}
+
+
+/*
+Motion trigger threshold settings
+Range 0-250
+*/
+void Radar_MR24HPC1::set_motion_threshold(uint8_t range) {
+  if (range > 250) {
+    range = 250;
+  }
+  const int len = 10;
+  uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x08, 0x09, 0x00, 0x01, range, 0x00, END1, END2};
+  frame[I_DATA+1] = get_frame_sum(frame, len);
+  send_query(frame, len);
 }
 
 
@@ -358,6 +764,17 @@ uint8_t Radar_MR24HPC1::calculate_sum(const unsigned char f[], int size) {
 }
 
 /*
+Full frames in
+*/
+uint8_t Radar_MR24HPC1::get_frame_sum(uint8_t *frame, int len) {
+  unsigned int sum = 0;
+  for (int i = 0; i < len - 3; i++) {
+    sum += frame[i];
+  }
+  return sum & 0xff;
+}
+
+/*
  Compare data sum and calculated sum
 */
 bool Radar_MR24HPC1::is_frame_good(const unsigned char f[]) {
@@ -390,11 +807,36 @@ void Radar_MR24HPC1::set_mode(int mode) {
   if (mode == SIMPLE) {
     stream->write(off_cmd, CMD_LEN);
     stream->flush();
-    is_advanced_mode = false;
+    advanced_mode = false;
   } else if (mode == ADVANCED) {
     stream->write(on_cmd, CMD_LEN);
     stream->flush();
-    is_advanced_mode = true;
+    advanced_mode = true;
+  }
+}
+
+/*
+Returns radar mode:
+1 - Advandced
+0 - Simple
+*/
+int Radar_MR24HPC1::get_mode() {
+  if (advanced_mode) {
+    return ADVANCED;
+  } else {
+    return SIMPLE;
+  }
+}
+
+
+/*
+Runs on the loop 
+*/
+void Radar_MR24HPC1::run() {
+  read();  // Read new frames
+
+  if (is_new_frame) {
+    int control_word = frame[I_CONTROL_WORD];
   }
 }
 
@@ -404,6 +846,7 @@ Returns Underlying Open function status:
 1-ON
 0-OFF
 */
+/*
 int Radar_MR24HPC1::underlying_status() {
   const unsigned char status_cmd[CMD_LEN] = {
     HEAD1, HEAD2, 0x08, 0x80, 0x00, 0x01, 0x0F, 0x44, END1, END2};
@@ -422,11 +865,14 @@ int Radar_MR24HPC1::underlying_status() {
   is_new_frame = false;
   return 0;
 }
+*/
 
 /*
 Translate the responses into human-readable form
+TODO: Rename Verbal
 */
 void Radar_MR24HPC1::translate() {
+  read();
   if (is_new_frame) {
     int control_word = frame[I_CONTROL_WORD];
 
@@ -478,7 +924,7 @@ Controll word 0x02
 Product info
 */
 void Radar_MR24HPC1::translate_02() {
-  // int cmd_word = frame[I_CMD_WORD];
+  int cmd_word = frame[I_CMD_WORD];
   int len = frame[I_LENGHT_L];
   // int data = frame[I_DATA];
 
@@ -516,9 +962,7 @@ void Radar_MR24HPC1::translate_05() {
       Serial.println("Scene settings inquiry");
   } else if (cmd_word == 0x88) {
       Serial.println("Sensitivity settings inquiry");
-  }
-  // Underlying
-  else if (cmd_word == 0x09) {
+  } else if (cmd_word == 0x09) {  // Underlying
       Serial.println("Custom mode setting");
   } else if (cmd_word == 0x0A) {
       Serial.println("Custom mode saved");

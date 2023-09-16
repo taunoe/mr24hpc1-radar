@@ -73,18 +73,19 @@ Copyright 2023 Tauno Erik
 // Reset cmd
 #define CMD_LEN 10       // Reset data frame length
 
+// Mode
 #define SIMPLE        0
 #define ADVANCED      1
 
-// TODO: simple mode, advandced mode
-
 class Radar_MR24HPC1 {
  private:
-    Stream *stream;  // e.g. SoftwareSerial or Serial1
-    bool is_new_frame;  // is_new_data
-    uint8_t frame_len;  // data_len
+    Stream *stream;     // SoftwareSerial or Serial1
+    bool is_new_frame;
+    uint8_t frame_len;
+    const uint64_t TIME_INTERVAL = 150;
 
-    unsigned char frame[FRAME_SIZE] = {0};  // data
+    unsigned char frame[FRAME_SIZE] = {0};
+
     int count = 0;
     int checkframe_len = 2;  // Without cyclic sending, number of frames sent
 
@@ -98,9 +99,15 @@ class Radar_MR24HPC1 {
     void translate_08();
     void translate_80();
 
- public:
-   bool is_advanced_mode = false;
+    bool advanced_mode = false;
+    void send_query(const unsigned char *frame, int len);  // Send to radar
+    // Calculate checksum
+    uint8_t calculate_sum(const unsigned char f[], int size);
+    uint8_t get_frame_sum(uint8_t *frame, int len);
+    bool is_frame_good(const unsigned char f[]);  // Private
 
+
+ public:
     int status_msg = 0;     // Status message
     int bodysign_val = 0;
 
@@ -112,23 +119,54 @@ class Radar_MR24HPC1 {
 
     Radar_MR24HPC1(Stream *s);
 
+
     void read();
     void print(int mode = HEX);
 
-    void set_mode(int mode);  // 0 SIMPLE, 1 ADVANCED
-    int underlying_status();
+    void set_mode(int mode);
+    int get_mode();
 
-    // void analys(bool show_bodysign);
-    // checkSetMode_func:
-    void write_cmd(const unsigned char* buff, int len, bool cyclic = false);
-    int reset();
-    int get_id();
-    int firm_ver_id();
-    void print_hex(const unsigned char* buff, int len);
-    void print_dec(const unsigned char* buff, int len);
-    // Calculate checksum
-    uint8_t calculate_sum(const unsigned char f[], int size);
-    bool is_frame_good(const unsigned char f[]);  // Private
+    void run();
+
+    void send_reset();
+    void send_heartbeat();
+    void ask_product_model();
+    void ask_product_id();
+    void ask_hardware_model();
+    void ask_firmware_version();
+    void set_movement_range(uint8_t range);  // simple+advanced
+    void set_static_range(uint8_t range);    // simple+advanced
+    void ask_initialization_status();
+    void ask_movement_range();
+    void ask_static_range();
+    void set_absence_trigger_time(uint8_t time);
+    void ask_presence();
+    void ask_motion_info();
+    void ask_body_parameter();
+    void ask_absence_trigger_time();
+    void ask_proximity();
+    // Advandced
+    void ask_mode();
+    void ask_static_energy();
+    void ask_motion_energy();
+    void ask_static_distance();
+    void ask_motion_distance();
+    void ask_motion_speed();
+    void ask_custom_mode();
+
+    void start_custom_mode_settings(uint8_t mode);
+    void end_custom_mode_settings();
+
+    void set_static_threshold(uint8_t range);
+    void set_motion_threshold(uint8_t range);
+
+
+
+    void write_cmd(const unsigned char *buff, int len, bool cyclic = false);
+
+    void print_hex(const unsigned char *buff, int len);
+    void print_dec(const unsigned char *buff, int len);
+
 
     void translate();
 };
