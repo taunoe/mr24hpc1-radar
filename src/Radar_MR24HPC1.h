@@ -45,19 +45,29 @@ Copyright 2023 Tauno Erik
 #define DET_PROX_REPORT  0x06       // Human movement trends //DETAILDIRECT
 #define DET_MOVMENT_PARA 0x07       // Body Signs Parameters //DETAILSIGN
 
+#define RANGE_50_CM      0x01
+#define RANGE_100_CM     0x02
+#define RANGE_150_CM     0x03
+#define RANGE_200_CM     0x04
+#define RANGE_250_CM     0x05
+#define RANGE_300_CM     0x06
+#define RANGE_350_CM     0x07
+#define RANGE_400_CM     0x08
+#define RANGE_450_CM     0x09
+#define RANGE_500_CM     0x10
 
-// Return statues, Use in arduino
-#define SOMEONE       0x01       // There are people
-#define NOONE         0x02       // No one
-#define NOTHING       0x03       // No message
-#define SOMEONE_STOP  0x04       // Somebody stop
-#define SOMEONE_MOVE  0x05       // Somebody move
-#define HUMANPARA     0x06       // Body Signs Parameters
-#define SOMEONE_CLOSE 0x07       // Someone approaches
-#define SOMEONE_AWAY  0x08       // Some people stay away
-#define DETAILMESSAGE 0x09       // Underlying parameters of the human state
+#define TIME_10_S       0x01
+#define TIME_30_S       0x02
+#define TIME_60_S       0x03
+#define TIME_2_MIN      0x04
+#define TIME_5_MIN      0x05
+#define TIME_10_MIN     0x06
+#define TIME_30_MIN     0x07
+#define TIME_60_MIN     0x08
 
-#define UNIT          0.5        // Calculate unit steps
+// run()
+#define VERBAL          true
+#define NONVERBAL       false
 
 // Data bytes indexes
 #define I_HEAD1        0  // Frame header 1
@@ -68,7 +78,7 @@ Copyright 2023 Tauno Erik
 #define I_LENGHT_L     5  // How many bytes of data
 #define I_DATA         6  // Beginning of data bytes
 //
-#define FRAME_SIZE     14  // Max data frame size in bytes
+#define FRAME_SIZE    32  // Max data frame size in bytes. Is it 128??
 
 // Reset cmd
 #define CMD_LEN 10       // Reset data frame length
@@ -80,24 +90,18 @@ Copyright 2023 Tauno Erik
 class Radar_MR24HPC1 {
  private:
     Stream *stream;     // SoftwareSerial or Serial1
-    bool is_new_frame;
-    uint8_t frame_len;
-    const uint64_t TIME_INTERVAL = 150;
-
     unsigned char frame[FRAME_SIZE] = {0};
-
-    int count = 0;
-    int checkframe_len = 2;  // Without cyclic sending, number of frames sent
+    bool is_new_frame;  // New frame is ready
+    uint8_t frame_len;  // Data frame size
 
     float calculate_distance(int val);
     float calculate_speed(int val);
+    int calculate_time(const unsigned char hex[], int size);
+
     int hex_to_int(const unsigned char *hexChar);
     char hex_to_char(const unsigned char *hex);
-    void translate_01();
-    void translate_02();
-    void translate_05();
-    void translate_08();
-    void translate_80();
+
+    void run_08(bool mode = NONVERBAL);
 
     bool advanced_mode = false;
     void send_query(const unsigned char *frame, int len);  // Send to radar
@@ -106,9 +110,20 @@ class Radar_MR24HPC1 {
     uint8_t get_frame_sum(uint8_t *frame, int len);
     bool is_frame_good(const unsigned char f[]);  // Private
 
+    void translate_01();
+    void translate_02();
+    void translate_05();
+    void translate_08();
+    void translate_80();
+
+    // Radar dada
+    int motion_to_still_time = 0;               // advanced
+    int time_for_entering_no_person_state = 0;  // advanced
+    int motion_triger_time = 0;                 // advanced
+    int motion_trigger_range = 0;               // advanced
 
  public:
-    int status_msg = 0;     // Status message
+ /*   int status_msg = 0;     // Status message
     int bodysign_val = 0;
 
     int static_energy = 0;     // Spatial static values
@@ -116,7 +131,7 @@ class Radar_MR24HPC1 {
     int motion_energy = 0;
     float motion_dist = 0.0;   // Distance from the moving object m
     float motion_speed = 0.0;  // Speed of moving object m/s
-
+*/
     Radar_MR24HPC1(Stream *s);
 
 
@@ -126,7 +141,7 @@ class Radar_MR24HPC1 {
     void set_mode(int mode);
     int get_mode();
 
-    void run();
+    void run(bool mode = NONVERBAL);
 
     void send_reset();
     void send_heartbeat();
@@ -134,12 +149,18 @@ class Radar_MR24HPC1 {
     void ask_product_id();
     void ask_hardware_model();
     void ask_firmware_version();
-    void set_movement_range(uint8_t range);  // simple+advanced
-    void set_static_range(uint8_t range);    // simple+advanced
+
+    void set_movement_range(uint8_t range);    // simple + advanced
+    void set_static_range(uint8_t range);      // simple + advanced
+    void set_static_threshold(uint8_t range);  //
+    void set_motion_threshold(uint8_t range);  // simple
+    int set_motion_range(uint8_t range);      // advanced
+
+    void set_absence_trigger_time(uint8_t time);  // simple
+
     void ask_initialization_status();
     void ask_movement_range();
-    void ask_static_range();
-    void set_absence_trigger_time(uint8_t time);
+    void ask_sensitivity_level();  // simple
     void ask_presence();
     void ask_motion_info();
     void ask_body_parameter();
@@ -153,12 +174,16 @@ class Radar_MR24HPC1 {
     void ask_motion_distance();
     void ask_motion_speed();
     void ask_custom_mode();
+    int ask_static_threshold();
+    int ask_motion_threshold();
+    int ask_static_range();
+    int ask_motion_range();
+    int ask_motion_trigger_time();
+    int ask_motion_to_still_time();
+    int ask_no_person_time();
 
     void start_custom_mode_settings(uint8_t mode);
     void end_custom_mode_settings();
-
-    void set_static_threshold(uint8_t range);
-    void set_motion_threshold(uint8_t range);
 
 
 

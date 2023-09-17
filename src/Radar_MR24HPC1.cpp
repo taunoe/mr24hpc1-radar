@@ -218,81 +218,6 @@ void Radar_MR24HPC1::analys(bool show_bodysign) {
 */
 
 
-// Send data frame
-void Radar_MR24HPC1::write_cmd(const unsigned char* buff,
-                              int len, bool cyclic) {
-  if (cyclic || count < checkframe_len) {
-    if (cyclic || count < 1) {
-      stream->write(buff, len);
-      stream->flush();
-    }
-
-    // read radar responce
-    do {
-      read();
-      delay(20);
-    } while (!(this->is_new_frame));
-
-    if (cyclic || count < 1) {
-      Serial.print("  Sent  ---> ");
-      print_hex(buff, len);
-    }
-
-    if (count%2 == 1) {
-      Serial.print("Receive <--- ");
-      print();
-    }
-
-    is_new_frame = false;
-  }
-  count++;
-}
-
-/*
-Return Radar ID
-*/
-/*
-int Radar_MR24HPC1::get_id() {
-  const unsigned char id_cmd[CMD_LEN] = {
-    HEAD1, HEAD2, 0x02, 0xA2, 0x00, 0x01, 0x0F, 0x60, END1, END2};
-
-  stream->write(id_cmd, CMD_LEN);
-  stream->flush();
-
-  // read radar responce
-  do {
-    read();
-    // delay(10);
-  } while (!(is_new_frame));
-
-  print(DEC);
-  is_new_frame = false;
-  // TODO: return id
-  return 0;
-}
-*/
-
-/*
-int Radar_MR24HPC1::firm_ver_id() {
-  const unsigned char firmware_ver_cmd[CMD_LEN] = {
-    HEAD1, HEAD2, 0x02, 0xA4, 0x00, 0x01, 0x0F, 0x62, END1, END2};
-
-  stream->write(firmware_ver_cmd, CMD_LEN);
-  stream->flush();
-
-  // read radar responce
-  do {
-    read();
-    // delay(10);
-  } while (!(is_new_frame));
-
-  print();
-  is_new_frame = false;
-  // TODO: return id
-  return 0;
-}
-*/
-
 /*
 Send Reset frame
 */
@@ -466,9 +391,9 @@ void Radar_MR24HPC1::ask_movement_range() {
 }
 
 /*
-sensitivity settings inquiry
+Sensitivity settings inquiry
 */
-void Radar_MR24HPC1::ask_static_range() {
+void Radar_MR24HPC1::ask_sensitivity_level() {
   const int len = 10;
   uint8_t frame[len] = {
     HEAD1, HEAD2, 0x05, 0x88, 0x00, 0x01, 0x0F, 0x00, END1, END2};
@@ -698,12 +623,165 @@ void Radar_MR24HPC1::set_motion_threshold(uint8_t range) {
   send_query(frame, len);
 }
 
+/*
+Motion trigger boundry settings
+0x01 0.5m
+0x02 1.0m
+0x03 1.5m
+0x04 2.0m
+0x05 2.5m
+0x06 3.0m
+0x07 3.5m
+0x08 4.0m
+0x09 4.5m
+0x0A 5.0m
+Returns 1 when advandsed mode
+*/
+int Radar_MR24HPC1::set_motion_range(uint8_t range) {
+  if (advanced_mode) {
+    if (range > 0x0A) {
+      range = 0x0A;
+    }
+    const int len = 10;
+    uint8_t frame[len] = {
+      HEAD1, HEAD2, 0x08, 0x09, 0x00, 0x01, range, 0x00, END1, END2};
+    frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
+  } else {
+    return 0;
+  }
+  return 1;
+}
+
+/*
+Existence judgment threshold inquiry
+Returns 1 when advandsed mode
+*/
+int Radar_MR24HPC1::ask_static_threshold() {
+  if (advanced_mode) {
+    const int len = 10;
+    uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x08, 0x88, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+      frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
+  } else {
+    return 0;
+  }
+  return 1;
+}
+
+/*
+Existence judgment threshold inquiry
+Returns 1 when advandsed mode
+*/
+int Radar_MR24HPC1::ask_motion_threshold() {
+  if (advanced_mode) {
+    const int len = 10;
+    uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x08, 0x89, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+      frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
+  } else {
+    return 0;
+  }
+  return 1;
+}
+
+/*
+Existence perception boundry inquiry
+Returns 1 when advandsed mode
+*/
+int Radar_MR24HPC1::ask_static_range() {
+  if (advanced_mode) {
+    const int len = 10;
+    uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x08, 0x8A, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+      frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
+  } else {
+    return 0;
+  }
+  return 1;
+}
+
+/*
+Motion trigger boundry inquiry
+Returns 1 when advandsed mode
+*/
+int Radar_MR24HPC1::ask_motion_range() {
+  if (advanced_mode) {
+    const int len = 10;
+    uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x08, 0x8B, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+      frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
+  } else {
+    return 0;
+  }
+  return 1;
+}
+
+/*
+Motion trigger time inquiry
+Returns 1 when advandsed mode
+*/
+int Radar_MR24HPC1::ask_motion_trigger_time() {
+  if (advanced_mode) {
+    const int len = 10;
+    uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x08, 0x8C, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+      frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
+  } else {
+    return 0;
+  }
+  return 1;
+}
+
+/*
+Motion to still time inquiry
+Returns 1 when advandsed mode
+*/
+int Radar_MR24HPC1::ask_motion_to_still_time() {
+  if (advanced_mode) {
+    const int len = 10;
+    uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x08, 0x8D, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+      frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
+  } else {
+    return 0;
+  }
+  return 1;
+}
+
+/*
+Time for entering no person state inquiry
+Returns 1 when advandsed mode
+*/
+int Radar_MR24HPC1::ask_no_person_time() {
+  if (advanced_mode) {
+    const int len = 10;
+    uint8_t frame[len] = {
+    HEAD1, HEAD2, 0x08, 0x8E, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+      frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
+  } else {
+    return 0;
+  }
+  return 1;
+}
+
+
 
 float Radar_MR24HPC1::calculate_distance(int val) {
+  const double UNIT = 0.5;
   return val*UNIT;
 }
 
 float Radar_MR24HPC1::calculate_speed(int val) {
+  const double UNIT = 0.5;
+
   if (val == 0x0A) {
     return 0;
   } else if (val > 0x0A) {
@@ -714,6 +792,20 @@ float Radar_MR24HPC1::calculate_speed(int val) {
     return (val)*UNIT;
   }
   return 0;
+}
+
+/*
+Takes time data in HEX array and retruns time in ms
+size - 4 bytes
+*/
+int Radar_MR24HPC1::calculate_time(const unsigned char hex[], int size) {
+  int decimal_value = 0;
+
+  for (int i = 0; i < 4; i++) {
+    decimal_value = (decimal_value << 8) | hex[i];
+  }
+
+  return decimal_value;  // ms
 }
 
 
@@ -832,40 +924,41 @@ int Radar_MR24HPC1::get_mode() {
 /*
 Runs on the loop 
 */
-void Radar_MR24HPC1::run() {
+void Radar_MR24HPC1::run(bool mode) {
   read();  // Read new frames
 
   if (is_new_frame) {
     int control_word = frame[I_CONTROL_WORD];
+
+    switch (control_word) {
+      case 0x01:
+        // run_01();
+        break;
+      case 0x02:
+        // run_02();
+        break;
+      case 0x03:
+        Serial.println("Radar: UART upgrade");
+        break;
+      case 0x05:
+        // run_05();
+        break;
+      case 0x08:
+        run_08(mode);
+        break;
+      case 0x80:
+        // run_80(mode);
+        break;
+      default:
+        //print();
+        break;
+    }
   }
-}
-
-
-/*
-Returns Underlying Open function status:
-1-ON
-0-OFF
-*/
-/*
-int Radar_MR24HPC1::underlying_status() {
-  const unsigned char status_cmd[CMD_LEN] = {
-    HEAD1, HEAD2, 0x08, 0x80, 0x00, 0x01, 0x0F, 0x44, END1, END2};
-
-  // Send command
-  stream->write(status_cmd, CMD_LEN);
-  stream->flush();
-  // Read response
-  do {
-    read();
-    // delay(10);
-  } while (!(is_new_frame));
-
-  Serial.print("Response: ");
   print();
-  is_new_frame = false;
-  return 0;
 }
-*/
+
+
+
 
 /*
 Translate the responses into human-readable form
@@ -880,7 +973,7 @@ void Radar_MR24HPC1::translate() {
       case 0x01:
         translate_01();
         break;
-       case 0x02:
+      case 0x02:
         translate_02();
         break;
       case 0x03:
@@ -1059,5 +1152,112 @@ void Radar_MR24HPC1::translate_80() {
       Serial.println("Time inquiry");
   } else if (cmd_word == 0x8B) {
       Serial.println("Proximity movment");
+  }
+}
+
+/////////////////////////
+/*
+run() helper func
+Controll word 0x08
+*/
+void Radar_MR24HPC1::run_08(bool mode) {
+  int cmd_word = frame[I_CMD_WORD];
+  // int data_len = frame[I_LENGHT_L];
+  int data = frame[I_DATA];
+  const unsigned char time_data[4] = {frame[6], frame[7], frame[8], frame[9]};
+
+  if (cmd_word == 0x00) {
+      Serial.println("Output switch");
+  } else if (cmd_word == 0x01) {
+      Serial.println("Sensor report");
+  } else if (cmd_word == 0x08) {
+      Serial.println("Sensor report");
+  } else if (cmd_word == 0x09) {
+      Serial.println("Trigger threshold settings");
+  } else if (cmd_word == 0x80) {
+      Serial.println("Output switch inquiry");
+  } else if (cmd_word == 0x81) {
+      Serial.println("Static energy");
+  } else if (cmd_word == 0x82) {
+      Serial.println("Motion energy");
+  } else if (cmd_word == 0x83) {
+      Serial.println("Static distance inquiry");
+  } else if (cmd_word == 0x84) {
+      Serial.println("Motion distance inquiry");
+  } else if (cmd_word == 0x85) {
+      Serial.println("Motion speed");
+  } else if (cmd_word == 0x88) {
+      Serial.println("Static Threshold inquiry");
+  } else if (cmd_word == 0x89) {
+      Serial.println("Motion Threshold inquiry");
+  } else if (cmd_word == 0x0A) {
+      Serial.println("Static Detection range setting");
+  } else if (cmd_word == 0x0B) {
+      Serial.println("Motion Detection range setting");
+  } else if (cmd_word == 0x0C) {
+      Serial.println("Trigger time setting");
+  } else if (cmd_word == 0x0D) {
+      Serial.println("Still time setting");
+  } else if (cmd_word == 0x0E) {
+      Serial.println("no persson setting");
+  } else if (cmd_word == 0x8A) {
+    if (mode == VERBAL) {
+      Serial.println("static boundary inquiry");
+    }
+  } else if (cmd_word == 0x8B) {
+    switch (data) {
+      case RANGE_50_CM:
+        motion_trigger_range = 50;  // 50cm
+        break;
+      case RANGE_100_CM:
+        motion_trigger_range = 100;
+        break;
+      case TIME_60_S:
+        motion_trigger_range = 60;
+        break;
+      case TIME_2_MIN:
+        motion_trigger_range = 120;
+        break;
+      case TIME_5_MIN:
+        motion_trigger_range = 300;
+        break;
+      case TIME_10_MIN:
+        motion_trigger_range = 600;
+        break;
+      case TIME_30_MIN:
+        motion_trigger_range = 1800;
+        break;
+      case TIME_60_MIN:
+        motion_trigger_range = 3600;
+        break;
+      default:
+        break;
+    }
+    if (mode == VERBAL) {
+      Serial.print("Motion trigger range: ");
+      Serial.print(motion_trigger_range);
+      Serial.println("s");
+    }
+  } else if (cmd_word == 0x8C) {
+    motion_triger_time = calculate_time(time_data, 4);
+    if (mode == VERBAL) {
+      Serial.print("Motion trigger time: ");
+      Serial.print(motion_triger_time);  // 0-1000ms
+      Serial.println("ms");
+    }
+  } else if (cmd_word == 0x8D) {
+    motion_to_still_time = calculate_time(time_data, 4);
+    if (mode == VERBAL) {
+      Serial.print("Motion to still time: ");
+      Serial.print(motion_to_still_time);  // 1-60s
+      Serial.println("ms");
+    }
+  } else if (cmd_word == 0x8E) {
+    time_for_entering_no_person_state = calculate_time(time_data, 4);
+    if (mode == VERBAL) {
+      Serial.print("Time for entering no person state: ");
+      Serial.print(time_for_entering_no_person_state);     // 0s to 3600s
+      Serial.println("ms");
+    }
   }
 }
