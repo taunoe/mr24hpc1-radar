@@ -54,7 +54,7 @@ Copyright 2023 Tauno Erik
 #define RANGE_350_CM     0x07
 #define RANGE_400_CM     0x08
 #define RANGE_450_CM     0x09
-#define RANGE_500_CM     0x10
+#define RANGE_500_CM     0x0A
 
 #define TIME_10_S       0x01
 #define TIME_30_S       0x02
@@ -94,7 +94,8 @@ class Radar_MR24HPC1 {
     bool is_new_frame;  // New frame is ready
     uint8_t frame_len;  // Data frame size
 
-    float calculate_distance(int val);
+    float calculate_distance_m(int val);
+    int calculate_distance_cm(uint8_t data);
     float calculate_speed(int val);
     int calculate_time(const unsigned char hex[], int size);
 
@@ -102,8 +103,31 @@ class Radar_MR24HPC1 {
     char hex_to_char(const unsigned char *hex);
 
     void run_08(bool mode = NONVERBAL);
+    void run_08_cmd_0x00(bool mode = NONVERBAL);  // advandced on/off
+    void run_08_cmd_0x01(bool mode = NONVERBAL);  // Sensor report
+    void run_08_cmd_0x08(bool mode = NONVERBAL);  // Static energy threshold
+    void run_08_cmd_0x09(bool mode = NONVERBAL);  // Motion energy threshold
+    void run_08_cmd_0x80(bool mode = NONVERBAL);  // advandced on/off
+    void run_08_cmd_0x81(bool mode = NONVERBAL);  // Static energy
+    void run_08_cmd_0x82(bool mode = NONVERBAL);  // Motion energy
+    void run_08_cmd_0x83(bool mode = NONVERBAL);  // Static distance
+    void run_08_cmd_0x84(bool mode = NONVERBAL);  // Motion distance
+    void run_08_cmd_0x85(bool mode = NONVERBAL);  // Motion speed
+    void run_08_cmd_0x88(bool mode = NONVERBAL);  // Static energy threshold
+    void run_08_cmd_0x89(bool mode = NONVERBAL);  // Motion energy threshold
+    void run_08_cmd_0x0A(bool mode = NONVERBAL);  // Static trigger range
+    void run_08_cmd_0x8A(bool mode = NONVERBAL);  // Static trigger range
+    void run_08_cmd_0x0B(bool mode = NONVERBAL);  // Motion trigger range
+    void run_08_cmd_0x8B(bool mode = NONVERBAL);  // Motion trigger range
+    void run_08_cmd_0x0C(bool mode = NONVERBAL);  // Motion trigger time setting
+    void run_08_cmd_0x8C(bool mode = NONVERBAL);  // Motion trigger time
+    void run_08_cmd_0x0D(bool mode = NONVERBAL);  // Motion to still time setting
+    void run_08_cmd_0x8D(bool mode = NONVERBAL);  // Motion to still time
+    void run_08_cmd_0x0E(bool mode = NONVERBAL);  // entering no person state
+    void run_08_cmd_0x8E(bool mode = NONVERBAL);  // entering no person state
 
     bool advanced_mode = false;
+
     void send_query(const unsigned char *frame, int len);  // Send to radar
     // Calculate checksum
     uint8_t calculate_sum(const unsigned char f[], int size);
@@ -121,6 +145,14 @@ class Radar_MR24HPC1 {
     int time_for_entering_no_person_state = 0;  // advanced
     int motion_triger_time = 0;                 // advanced
     int motion_trigger_range = 0;               // advanced
+    int static_trigger_range = 0;               // advanced
+    int motion_energy_threshold = 0;            // advanced
+    int static_energy_threshold = 0;
+    int static_distance = 0;
+    int motion_distance = 0;
+    int motion_energy = 0;
+    float motion_speed = 0;  // m/s
+    int static_energy = 0;
 
  public:
  /*   int status_msg = 0;     // Status message

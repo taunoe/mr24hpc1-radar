@@ -772,13 +772,62 @@ int Radar_MR24HPC1::ask_no_person_time() {
   return 1;
 }
 
-
-
-float Radar_MR24HPC1::calculate_distance(int val) {
-  const double UNIT = 0.5;
-  return val*UNIT;
+/*
+hex to cm
+*/
+int Radar_MR24HPC1::calculate_distance_cm(uint8_t data) {
+  int UNIT = 50;     // cm
+  return data*UNIT;  // cm
+  /*
+  switch (data) {
+    case RANGE_50_CM:
+      return 50;  // 50cm
+      break;
+    case RANGE_100_CM:
+      return 100;
+      break;
+    case RANGE_150_CM:
+      return 150;
+      break;
+    case RANGE_200_CM:
+      return 200;
+      break;
+    case RANGE_250_CM:
+      return 250;
+      break;
+    case RANGE_300_CM:
+      return 300;
+      break;
+    case RANGE_350_CM:
+      return 350;
+      break;
+    case RANGE_400_CM:
+      return 400;
+      break;
+    case RANGE_450_CM:
+      return 450;
+      break;
+    case RANGE_500_CM:
+      return 500;
+      break;
+    default:
+      return 0;
+      break;
+  }*/
 }
 
+
+/*
+Hex to meters
+*/
+float Radar_MR24HPC1::calculate_distance_m(int val) {
+  const double UNIT = 0.5;
+  return val*UNIT;  // m
+}
+
+/*
+Hex to speed
+*/
 float Radar_MR24HPC1::calculate_speed(int val) {
   const double UNIT = 0.5;
 
@@ -1163,101 +1212,353 @@ Controll word 0x08
 void Radar_MR24HPC1::run_08(bool mode) {
   int cmd_word = frame[I_CMD_WORD];
   // int data_len = frame[I_LENGHT_L];
-  int data = frame[I_DATA];
-  const unsigned char time_data[4] = {frame[6], frame[7], frame[8], frame[9]};
+  // int data = frame[I_DATA];
+  // const unsigned char time_data[4] = {frame[6], frame[7], frame[8], frame[9]};
 
-  if (cmd_word == 0x00) {
-      Serial.println("Output switch");
-  } else if (cmd_word == 0x01) {
-      Serial.println("Sensor report");
-  } else if (cmd_word == 0x08) {
-      Serial.println("Sensor report");
-  } else if (cmd_word == 0x09) {
-      Serial.println("Trigger threshold settings");
-  } else if (cmd_word == 0x80) {
-      Serial.println("Output switch inquiry");
-  } else if (cmd_word == 0x81) {
-      Serial.println("Static energy");
-  } else if (cmd_word == 0x82) {
-      Serial.println("Motion energy");
-  } else if (cmd_word == 0x83) {
-      Serial.println("Static distance inquiry");
-  } else if (cmd_word == 0x84) {
-      Serial.println("Motion distance inquiry");
-  } else if (cmd_word == 0x85) {
-      Serial.println("Motion speed");
-  } else if (cmd_word == 0x88) {
-      Serial.println("Static Threshold inquiry");
-  } else if (cmd_word == 0x89) {
-      Serial.println("Motion Threshold inquiry");
-  } else if (cmd_word == 0x0A) {
-      Serial.println("Static Detection range setting");
-  } else if (cmd_word == 0x0B) {
-      Serial.println("Motion Detection range setting");
-  } else if (cmd_word == 0x0C) {
-      Serial.println("Trigger time setting");
-  } else if (cmd_word == 0x0D) {
-      Serial.println("Still time setting");
-  } else if (cmd_word == 0x0E) {
-      Serial.println("no persson setting");
-  } else if (cmd_word == 0x8A) {
+  switch (cmd_word) {
+    case 0x00:
+      run_08_cmd_0x00(mode);  // Output switch
+      break;
+    case 0x01:
+      run_08_cmd_0x01(mode);  // Sensor report
+      break;
+    case 0x08:
+      run_08_cmd_0x08(mode);  // Static energy threshold
+      break;
+    case 0x09:
+      run_08_cmd_0x09(mode);  // Motion energy threshold settings
+      break;
+    case 0x80:
+      run_08_cmd_0x80(mode);  // Output switch inquiry
+      break;
+    case 0x81:
+      run_08_cmd_0x81(mode);  // Static energy
+      break;
+    case 0x82:
+      run_08_cmd_0x82(mode);  // Motion energy
+      break;
+    case 0x83:
+      run_08_cmd_0x83(mode);  // Static distance inquiry
+      break;
+    case 0x84:
+      run_08_cmd_0x84(mode);  // Motion distance inquiry
+      break;
+    case 0x85:
+      run_08_cmd_0x85(mode);  // Motion speed
+      break;
+    case 0x88:
+      run_08_cmd_0x88(mode);  // Static energy threshold
+      break;
+    case 0x89:
+      run_08_cmd_0x89(mode);  // Motion energy threshold
+      break;
+    case 0x0A:
+      run_08_cmd_0x0A(mode);  // Static trigger range settings
+      break;
+    case 0x8A:
+      run_08_cmd_0x8A(mode);  // Static trigger range
+      break;
+    case 0x0B:
+      run_08_cmd_0x0B(mode);  // Motion trigger range settings
+      break;
+     case 0x8B:
+      run_08_cmd_0x8B(mode);  // Motion trigger range
+      break;
+    case 0x0C:
+      run_08_cmd_0x0C(mode);  // Trigger time setting
+      break;
+    case 0x8C:
+      run_08_cmd_0x8C(mode);  // Motion trigger time
+      break;
+    case 0x0D:
+      run_08_cmd_0x0D(mode);  // Still time setting
+      break;
+    case 0x8D:
+      run_08_cmd_0x8D(mode);  // Motion to still timeg
+      break;
+    case 0x0E:
+      run_08_cmd_0x0E(mode);  // Time for entering no person state
+      break;
+    case 0x8E:
+      run_08_cmd_0x8E(mode);  // Time for entering no person state
+      break;
+    default:
+      // print();
+      break;
+  }
+}
+
+/*
+Advandced mode: ON/OFF
+*/
+void Radar_MR24HPC1::run_08_cmd_0x00(bool mode) {
+  if (frame[I_DATA] == 0x01) {
+    advanced_mode = true;
     if (mode == VERBAL) {
-      Serial.println("static boundary inquiry");
+      Serial.println("Advandced mode: ON");
     }
-  } else if (cmd_word == 0x8B) {
-    switch (data) {
-      case RANGE_50_CM:
-        motion_trigger_range = 50;  // 50cm
-        break;
-      case RANGE_100_CM:
-        motion_trigger_range = 100;
-        break;
-      case TIME_60_S:
-        motion_trigger_range = 60;
-        break;
-      case TIME_2_MIN:
-        motion_trigger_range = 120;
-        break;
-      case TIME_5_MIN:
-        motion_trigger_range = 300;
-        break;
-      case TIME_10_MIN:
-        motion_trigger_range = 600;
-        break;
-      case TIME_30_MIN:
-        motion_trigger_range = 1800;
-        break;
-      case TIME_60_MIN:
-        motion_trigger_range = 3600;
-        break;
-      default:
-        break;
-    }
+  } else {
+    advanced_mode = false;
     if (mode == VERBAL) {
-      Serial.print("Motion trigger range: ");
-      Serial.print(motion_trigger_range);
-      Serial.println("s");
-    }
-  } else if (cmd_word == 0x8C) {
-    motion_triger_time = calculate_time(time_data, 4);
-    if (mode == VERBAL) {
-      Serial.print("Motion trigger time: ");
-      Serial.print(motion_triger_time);  // 0-1000ms
-      Serial.println("ms");
-    }
-  } else if (cmd_word == 0x8D) {
-    motion_to_still_time = calculate_time(time_data, 4);
-    if (mode == VERBAL) {
-      Serial.print("Motion to still time: ");
-      Serial.print(motion_to_still_time);  // 1-60s
-      Serial.println("ms");
-    }
-  } else if (cmd_word == 0x8E) {
-    time_for_entering_no_person_state = calculate_time(time_data, 4);
-    if (mode == VERBAL) {
-      Serial.print("Time for entering no person state: ");
-      Serial.print(time_for_entering_no_person_state);     // 0s to 3600s
-      Serial.println("ms");
+      Serial.println("Advandced mode: OFF");
     }
   }
 }
+
+/*
+*/
+void Radar_MR24HPC1::run_08_cmd_0x01(bool mode) {
+  static_energy   = frame[I_DATA];
+  static_distance = frame[I_DATA+1];
+  motion_energy   = frame[I_DATA+2];
+  motion_distance = frame[I_DATA+3];
+  motion_speed    = frame[I_DATA+4];
+
+  if (mode == VERBAL) {
+    Serial.print("Static energy: ");
+    Serial.println(static_energy);  // 0-250
+
+    Serial.print("Static distance: ");
+    Serial.print(static_distance);  // 0-3m
+    Serial.println("cm");
+
+    Serial.print("Motion energy: ");
+    Serial.println(motion_energy);  // 0-250
+
+    Serial.print("Motion distance: ");
+    Serial.print(motion_distance);  // 0-4m
+    Serial.println("cm");
+
+    Serial.print("Motion speed: ");
+    Serial.print(motion_speed);
+    Serial.println("m/cm");
+  }
+}
+
+/*
+Advandced mode: ON/OFF
+*/
+void Radar_MR24HPC1::run_08_cmd_0x80(bool mode) {
+  if (frame[I_DATA] == 0x01) {
+    advanced_mode = true;
+    if (mode == VERBAL) {
+      Serial.println("Advandced mode: ON");
+    }
+  } else {
+    advanced_mode = false;
+    if (mode == VERBAL) {
+      Serial.println("Advandced mode: OFF");
+    }
+  }
+}
+
+/*
+Static energy value inquiry
+*/
+void Radar_MR24HPC1::run_08_cmd_0x81(bool mode) {
+  static_energy = frame[I_DATA];
+
+  if (mode == VERBAL) {
+    Serial.print("Static energy: ");
+    Serial.println(static_energy);  // 0-250
+  }
+}
+
+/*
+Motion energy value inquiry
+*/
+void Radar_MR24HPC1::run_08_cmd_0x82(bool mode) {
+  motion_energy = frame[I_DATA];
+
+  if (mode == VERBAL) {
+    Serial.print("Motion energy: ");
+    Serial.println(motion_energy);  // 0-250
+  }
+}
+
+/*
+Static distance inquiry
+*/
+void Radar_MR24HPC1::run_08_cmd_0x83(bool mode) {
+  uint8_t data = frame[I_DATA];
+  static_distance = calculate_distance_cm(data);
+
+  if (mode == VERBAL) {
+    Serial.print("Static distance: ");
+    Serial.print(static_distance);  // 0-3m
+    Serial.println("cm");
+  }
+}
+
+/*
+Motion distance inquiry
+*/
+void Radar_MR24HPC1::run_08_cmd_0x84(bool mode) {
+  uint8_t data = frame[I_DATA];
+  motion_distance = calculate_distance_cm(data);
+
+  if (mode == VERBAL) {
+    Serial.print("Motion distance: ");
+    Serial.print(motion_distance);  // 0-4m
+    Serial.println("cm");
+  }
+}
+
+/*
+Motion speed inquiry
+*/
+void Radar_MR24HPC1::run_08_cmd_0x85(bool mode) {
+  uint8_t data = frame[I_DATA];
+  motion_speed = calculate_speed(data);
+
+  if (mode == VERBAL) {
+    Serial.print("Motion speed: ");
+    Serial.print(motion_speed);
+    Serial.println("m/cm");
+  }
+}
+
+/*
+Static energy threshold
+*/
+void Radar_MR24HPC1::run_08_cmd_0x88(bool mode) {
+  static_energy_threshold = frame[I_DATA];
+
+  if (mode == VERBAL) {
+    Serial.print("Static energy threshold: ");
+    Serial.println(static_energy_threshold);  // 0-250
+  }
+}
+
+void Radar_MR24HPC1::run_08_cmd_0x08(bool mode) {
+  run_08_cmd_0x88(mode);
+}
+
+/*
+Motion energy threshold
+*/
+void Radar_MR24HPC1::run_08_cmd_0x89(bool mode) {
+  motion_energy_threshold = frame[I_DATA];
+
+  if (mode == VERBAL) {
+    Serial.print("Motion energy threshold: ");
+    Serial.println(motion_energy_threshold);  // 0-250
+  }
+}
+
+void Radar_MR24HPC1::run_08_cmd_0x09(bool mode) {
+  run_08_cmd_0x89(mode);
+}
+
+/*
+Static trigger range
+*/
+void Radar_MR24HPC1::run_08_cmd_0x8A(bool mode) {
+  uint8_t data = frame[I_DATA];
+  static_trigger_range = calculate_distance_cm(data);
+
+  if (mode == VERBAL) {
+    Serial.print("Static trigger range: ");
+    Serial.print(static_trigger_range);  // 0-1000ms
+    Serial.println("cm");
+  }
+}
+
+void Radar_MR24HPC1::run_08_cmd_0x0A(bool mode) {
+  run_08_cmd_0x8A(mode);
+}
+
+/*
+Motion trigger range
+*/
+void Radar_MR24HPC1::run_08_cmd_0x8B(bool mode) {
+  uint8_t data = frame[I_DATA];
+  motion_trigger_range = calculate_distance_cm(data);
+
+  if (mode == VERBAL) {
+    Serial.print("Motion trigger range: ");
+    Serial.print(motion_trigger_range);
+    Serial.println("cm");
+  }
+}
+
+void Radar_MR24HPC1::run_08_cmd_0x0B(bool mode) {
+  run_08_cmd_0x8B(mode);
+}
+
+/*
+Motion trigger time
+*/
+void Radar_MR24HPC1::run_08_cmd_0x0C(bool mode) {
+  const unsigned char time_data[4] = {frame[6], frame[7], frame[8], frame[9]};
+  motion_triger_time = calculate_time(time_data, 4);
+
+  if (mode == VERBAL) {
+    Serial.print("Motion trigger time: ");
+    Serial.print(motion_triger_time);  // 0-1000ms
+    Serial.println("ms");
+  }
+}
+
+/*
+Motion trigger time
+*/
+void Radar_MR24HPC1::run_08_cmd_0x8C(bool mode) {
+  const unsigned char time_data[4] = {frame[6], frame[7], frame[8], frame[9]};
+  motion_triger_time = calculate_time(time_data, 4);
+
+  if (mode == VERBAL) {
+    Serial.print("Motion trigger time: ");
+    Serial.print(motion_triger_time);  // 0-1000ms
+    Serial.println("ms");
+  }
+}
+
+/*
+Motion to still time setting
+*/
+void Radar_MR24HPC1::run_08_cmd_0x0D(bool mode) {
+  const unsigned char time_data[4] = {frame[6], frame[7], frame[8], frame[9]};
+  motion_to_still_time = calculate_time(time_data, 4);
+
+  if (mode == VERBAL) {
+    Serial.print("Motion to still time: ");
+    Serial.print(motion_to_still_time);  // 1-60s
+    Serial.println("ms");
+  }
+}
+
+/*
+Motion to still time
+*/
+void Radar_MR24HPC1::run_08_cmd_0x8D(bool mode) {
+  const unsigned char time_data[4] = {frame[6], frame[7], frame[8], frame[9]};
+  motion_to_still_time = calculate_time(time_data, 4);
+
+  if (mode == VERBAL) {
+    Serial.print("Motion to still time: ");
+    Serial.print(motion_to_still_time);  // 1-60s
+    Serial.println("ms");
+  }
+}
+
+/*
+Time for entering no person state
+*/
+void Radar_MR24HPC1::run_08_cmd_0x8E(bool mode) {
+  const unsigned char time_data[4] = {frame[6], frame[7], frame[8], frame[9]};
+  time_for_entering_no_person_state = calculate_time(time_data, 4);
+
+  if (mode == VERBAL) {
+    Serial.print("Time for entering no person state: ");
+    Serial.print(time_for_entering_no_person_state);     // 0s to 3600s
+    Serial.println("ms");
+  }
+}
+
+void Radar_MR24HPC1::run_08_cmd_0x0E(bool mode) {
+  run_08_cmd_0x8E(mode);
+}
+
+
+
