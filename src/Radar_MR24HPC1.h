@@ -33,8 +33,9 @@ Copyright 2023 Tauno Erik
 
 // Motion reporting data
 #define NONE             0x00
-#define MOTIONLESS       0x01
+#define STATIC           0x01
 #define ACTIVE           0x02
+#define MOTION           0x02
 
 // Proximity reporting data
 #define NEAR             0x01       // Someone approaches //CA_CLOSE
@@ -102,6 +103,21 @@ class Radar_MR24HPC1 {
     int hex_to_int(const unsigned char *hexChar);
     char hex_to_char(const unsigned char *hex);
 
+    // Responses
+    void run_01(bool mode = NONVERBAL);  // Heartbeat
+    void run_02(bool mode = NONVERBAL);
+    void run_05(bool mode = NONVERBAL);
+    void run_05_cmd_0x01(bool mode = NONVERBAL);  // Init completed
+    void run_05_cmd_0x07(bool mode = NONVERBAL);  // Motion range respomse
+    void run_05_cmd_0x08(bool mode = NONVERBAL);  // Static range response
+    void run_05_cmd_0x09(bool mode = NONVERBAL);  // Custom mode setting
+    void run_05_cmd_0x81(bool mode = NONVERBAL);  // Initialization status inquiry response
+    void run_05_cmd_0x84(bool mode = NONVERBAL);  // Motion distance response
+    void run_05_cmd_0x85(bool mode = NONVERBAL);  // Motion speed response
+    void run_05_cmd_0x87(bool mode = NONVERBAL);  // Scene settings
+    void run_05_cmd_0x88(bool mode = NONVERBAL);  // Sensitivity settings
+    void run_05_cmd_0x89(bool mode = NONVERBAL);  // Custom mode inquiry response
+    void run_05_cmd_0x0A(bool mode = NONVERBAL);  // End of custom mode setting
     void run_08(bool mode = NONVERBAL);
     void run_08_cmd_0x00(bool mode = NONVERBAL);  // advandced on/off
     void run_08_cmd_0x01(bool mode = NONVERBAL);  // Sensor report
@@ -111,8 +127,6 @@ class Radar_MR24HPC1 {
     void run_08_cmd_0x81(bool mode = NONVERBAL);  // Static energy
     void run_08_cmd_0x82(bool mode = NONVERBAL);  // Motion energy
     void run_08_cmd_0x83(bool mode = NONVERBAL);  // Static distance
-    void run_08_cmd_0x84(bool mode = NONVERBAL);  // Motion distance
-    void run_08_cmd_0x85(bool mode = NONVERBAL);  // Motion speed
     void run_08_cmd_0x88(bool mode = NONVERBAL);  // Static energy threshold
     void run_08_cmd_0x89(bool mode = NONVERBAL);  // Motion energy threshold
     void run_08_cmd_0x0A(bool mode = NONVERBAL);  // Static trigger range
@@ -125,8 +139,18 @@ class Radar_MR24HPC1 {
     void run_08_cmd_0x8D(bool mode = NONVERBAL);  // Motion to still time
     void run_08_cmd_0x0E(bool mode = NONVERBAL);  // entering no person state
     void run_08_cmd_0x8E(bool mode = NONVERBAL);  // entering no person state
+    void run_80(bool mode = NONVERBAL);
+    void run_80_cmd_0x01(bool mode = NONVERBAL);  // Presence report
+    void run_80_cmd_0x02(bool mode = NONVERBAL);  // Motion report
+    void run_80_cmd_0x03(bool mode = NONVERBAL);  // Body parameter report
+    void run_80_cmd_0x81(bool mode = NONVERBAL);  // Presence response
+    void run_80_cmd_0x82(bool mode = NONVERBAL);  // Motion response
+    void run_80_cmd_0x83(bool mode = NONVERBAL);  // Body parameter
+    void run_80_cmd_0x0A(bool mode = NONVERBAL);  // setting time for no person state
+    void run_80_cmd_0x0B(bool mode = NONVERBAL);  // proximity setting
+    void run_80_cmd_0x8A(bool mode = NONVERBAL);  // setting time for no person state inquiry
+    void run_80_cmd_0x8B(bool mode = NONVERBAL);  // proximity inquiry
 
-    bool advanced_mode = false;
 
     void send_query(const unsigned char *frame, int len);  // Send to radar
     // Calculate checksum
@@ -134,13 +158,9 @@ class Radar_MR24HPC1 {
     uint8_t get_frame_sum(uint8_t *frame, int len);
     bool is_frame_good(const unsigned char f[]);  // Private
 
-    void translate_01();
-    void translate_02();
-    void translate_05();
-    void translate_08();
-    void translate_80();
-
     // Radar dada
+    int mode = ADVANCED;  // 0 simple, 1 advanced
+    int heartbeat = 0;
     int motion_to_still_time = 0;               // advanced
     int time_for_entering_no_person_state = 0;  // advanced
     int motion_triger_time = 0;                 // advanced
@@ -151,21 +171,17 @@ class Radar_MR24HPC1 {
     int static_distance = 0;
     int motion_distance = 0;
     int motion_energy = 0;
-    float motion_speed = 0;  // m/s
+    float motion_speed = 0;         // m/s
     int static_energy = 0;
+    int custom_mode = 0;            // 0x01 to 0x04
+    int initialization_status = 0;  // 0x01 or 0x02
+
+    int occupation = UNOCCUPIED;      // 0x00 or 0x01
+    int motion = NONE;                // 0x00 to 0x02
+    int activity = NONE;              // body_parameter 0-100%
 
  public:
- /*   int status_msg = 0;     // Status message
-    int bodysign_val = 0;
-
-    int static_energy = 0;     // Spatial static values
-    float static_dist = 0.0;   // Distance to stationary object m
-    int motion_energy = 0;
-    float motion_dist = 0.0;   // Distance from the moving object m
-    float motion_speed = 0.0;  // Speed of moving object m/s
-*/
     Radar_MR24HPC1(Stream *s);
-
 
     void read();
     void print(int mode = HEX);
@@ -175,8 +191,8 @@ class Radar_MR24HPC1 {
 
     void run(bool mode = NONVERBAL);
 
-    void send_reset();
-    void send_heartbeat();
+    void ask_reset();
+    void ask_heartbeat();
     void ask_product_model();
     void ask_product_id();
     void ask_hardware_model();
@@ -187,7 +203,6 @@ class Radar_MR24HPC1 {
     void set_static_threshold(uint8_t range);  //
     void set_motion_threshold(uint8_t range);  // simple
     int set_motion_range(uint8_t range);      // advanced
-
     void set_absence_trigger_time(uint8_t time);  // simple
 
     void ask_initialization_status();
@@ -217,15 +232,8 @@ class Radar_MR24HPC1 {
     void start_custom_mode_settings(uint8_t mode);
     void end_custom_mode_settings();
 
-
-
-    void write_cmd(const unsigned char *buff, int len, bool cyclic = false);
-
     void print_hex(const unsigned char *buff, int len);
     void print_dec(const unsigned char *buff, int len);
-
-
-    void translate();
 };
 
 #endif  // LIB_RADAR_MR24HPC1_SRC_RADAR_MR24HPC1_H_
