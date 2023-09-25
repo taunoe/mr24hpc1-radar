@@ -121,6 +121,7 @@ frame - array of bytes
 len - num of bytes
 */
 void Radar_MR24HPC1::send_query(const unsigned char *frame, int len) {
+  // print_hex(frame, len);
   stream->write(frame, len);
   stream->flush();
 }
@@ -128,7 +129,7 @@ void Radar_MR24HPC1::send_query(const unsigned char *frame, int len) {
 /*
 Send Reset frame
 */
-void Radar_MR24HPC1::ask_reset() {
+void Radar_MR24HPC1::reset() {
   const int len = 10;
   uint8_t frame[len] = {
     HEAD1, HEAD2, 0x01, 0x02, 0x00, 0x01, 0x0F, 0xBF, END1, END2};
@@ -624,9 +625,9 @@ void Radar_MR24HPC1::ask_no_person_time() {
 /*
 hex to cm
 */
-int Radar_MR24HPC1::calculate_distance_cm(uint8_t data) {
-  int UNIT = 50;     // cm
-  return data*UNIT;  // cm
+int Radar_MR24HPC1::calculate_distance_cm(int data) {
+  int value = 50 * data;  // cm
+  return value;  // cm
 }
 
 
@@ -881,10 +882,6 @@ void Radar_MR24HPC1::run_05(bool mode) {
       // Initializatio status inquiry response
       run_05_cmd_0x81(mode);
       break;
-    case 0x84:
-      // Motion distance inquiry response
-      run_05_cmd_0x84(mode);
-      break;
     case 0x85:
       // Motion speed inquiry response
       run_05_cmd_0x85(mode);
@@ -1006,21 +1003,6 @@ void Radar_MR24HPC1::run_05_cmd_0x81(bool mode) {
   }
 }
 
-
-
-/*
-Motion distance inquiry response
-*/
-void Radar_MR24HPC1::run_05_cmd_0x84(bool mode) {
-  uint8_t data = frame[I_DATA];
-  motion_distance = calculate_distance_cm(data);
-
-  if (mode == VERBAL) {
-    Serial.print("Motion distance: ");
-    Serial.print(motion_distance);  // 0-4m
-    Serial.println(" cm");
-  }
-}
 
 /*
 Motion speed inquiry response
@@ -1164,6 +1146,9 @@ void Radar_MR24HPC1::run_08(bool mode) {
     case 0x83:
       run_08_cmd_0x83(mode);  // Static distance inquiry
       break;
+    case 0x84:
+      run_08_cmd_0x84(mode);
+      break;
     case 0x88:
       run_08_cmd_0x88(mode);  // Static energy threshold
       break;
@@ -1228,9 +1213,10 @@ Reporting of sensor information
 */
 void Radar_MR24HPC1::run_08_cmd_0x01(bool mode) {
   static_energy   = frame[I_DATA];
-  static_distance = frame[I_DATA+1];
+  static_distance = calculate_distance_cm(frame[I_DATA+1]);
   motion_energy   = frame[I_DATA+2];
-  motion_distance = frame[I_DATA+3];
+  motion_distance = calculate_distance_cm(frame[I_DATA+3]);
+
   uint8_t motion_speed_byte = frame[I_DATA+4];
 
   motion_speed = calculate_speed(motion_speed_byte);
@@ -1319,7 +1305,19 @@ void Radar_MR24HPC1::run_08_cmd_0x83(bool mode) {
   }
 }
 
+/*
+Motion distance inquiry response
+*/
+void Radar_MR24HPC1::run_08_cmd_0x84(bool mode) {
+  uint8_t data = frame[I_DATA];
+  motion_distance = calculate_distance_cm(data);
 
+  if (mode == VERBAL) {
+    Serial.print("Motion distance: ");
+    Serial.print(motion_distance);  // 0-4m
+    Serial.println(" cm");
+  }
+}
 
 /*
 Static energy threshold
@@ -1781,7 +1779,79 @@ int Radar_MR24HPC1::get_activity() {
 /*
 SIMPLE mode
 Returns
+1 (APPROACHING) when human body moves closer.
+2 (RECEDING) when human body moves away from radar.
+Otherwise returns 0.
 */
 int Radar_MR24HPC1::get_direction() {
+  //ask_direction();
   return direction;
+}
+
+/*
+SIMPLE mode
+Returns motion
+0 NONE
+1 STATIV
+2 ACTIVE
+*/
+int Radar_MR24HPC1::get_motion() {
+  ask_motion();
+  return motion;
+}
+
+/*
+SIMPLE mode
+Returns
+0 UNOCCUPIED
+1 OCCUPIED
+*/
+int Radar_MR24HPC1::get_presence() {
+  ask_presence();
+  return presence;
+}
+
+/*
+ADVANDSED mode
+Returns motion energy value from 0 to 250.
+*/
+int Radar_MR24HPC1::get_motion_energy() {
+  ask_motion_energy();
+  return motion_energy;
+}
+
+/*
+ADVANDSED mode
+Returns motion speed in m/s
+*/
+float Radar_MR24HPC1::get_motion_speed() {
+  ask_motion_speed();
+  return motion_speed;
+}
+
+/*
+ADVANDSED mode
+Returns the distance of the moving body in cm
+*/
+int Radar_MR24HPC1::get_motion_distance() {
+  ask_motion_distance();
+  return motion_distance;
+}
+
+/*
+ADVANDSED mode
+Returns static body energy value from 0 to 250.
+*/
+int Radar_MR24HPC1::get_static_energy() {
+  ask_static_energy();
+  return static_energy;
+}
+
+/*
+ADVANDSED mode
+Returns the distance of the static body in cm
+*/
+int Radar_MR24HPC1::get_static_distance() {
+  ask_static_distance();
+  return static_distance;
 }
