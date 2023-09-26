@@ -211,6 +211,9 @@ Motion trigger boundary settings
 0x0A 5.0m
 */
 void Radar_MR24HPC1::set_motion_limit(uint8_t limit) {
+  // Start custom mode
+  start_custom_mode_settings(1);
+
   const int len = 10;
 
   if (mode == ADVANCED) {
@@ -230,6 +233,9 @@ void Radar_MR24HPC1::set_motion_limit(uint8_t limit) {
     frame_s[I_DATA+1] = get_frame_sum(frame_s, len);
     send_query(frame_s, len);
   }
+
+  // save
+  end_custom_mode_settings();
 }
 
 /*

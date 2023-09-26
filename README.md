@@ -1,6 +1,6 @@
 # MR24HPC1 radar library
 
-![Seeed radar MR24HPC1](img/radar_2048.jpg)
+![Seeed radar MR24HPC1](img/radar_github.jpg)
 
 Arduino Library for [Seeed MR24HPC1 radar](https://www.seeedstudio.com/24GHz-mmWave-Sensor-Human-Static-Presence-Module-Lite-p-5524.html)
 
@@ -301,23 +301,31 @@ Serial.println(" cm");
 Max limit to recognize human body movements.
 
 In Simple mode:
-0x01 4.0-4.5 m detection radius
-0x02 3.5-4.0 m
-0x03 2.5-3.0 m
-0x04 3.0-3.5 m
+
+- 0x01 is 4.0-4.5 m
+- 0x02 is 3.5-4.0 m
+- 0x03 is 2.5-3.0 m
+- 0x04 is 3.0-3.5 m
 
 In Advandced mode:
-Motion trigger boundary settings
-0x01 0.5m
-0x02 1.0m
-0x03 1.5m
-0x04 2.0m
-0x05 2.5m
-0x06 3.0m
-0x07 3.5m
-0x08 4.0m
-0x09 4.5m
-0x0A 5.0m
+
+- 0x01 is 0.5m
+- 0x02 is 1.0m
+- 0x03 is 1.5m
+- 0x04 is 2.0m
+- 0x05 is 2.5m
+- 0x06 is 3.0m
+- 0x07 is 3.5m
+- 0x08 is 4.0m
+- 0x09 is 4.5m
+- 0x0A is 5.0m
+
+```c++
+void setup() {
+  radar.set_mode(ADVANCED);
+  radar.set_motion_limit(RANGE_300_CM);
+}
+```
 
 ## set_static_limit(uint8_t limit)
 
