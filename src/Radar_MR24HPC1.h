@@ -92,8 +92,8 @@ class Radar_MR24HPC1 {
     void run_02(bool mode = NONVERBAL);
     void run_05(bool mode = NONVERBAL);
     void run_05_cmd_0x01(bool mode = NONVERBAL);  // Init completed
-    void run_05_cmd_0x07(bool mode = NONVERBAL);  // Motion range respomse
-    void run_05_cmd_0x08(bool mode = NONVERBAL);  // Static range response
+    void run_05_cmd_0x07(bool mode = NONVERBAL);  // Motion limit respomse
+    void run_05_cmd_0x08(bool mode = NONVERBAL);  // Static limit response
     void run_05_cmd_0x09(bool mode = NONVERBAL);  // Custom mode setting
     void run_05_cmd_0x81(bool mode = NONVERBAL);  // Initialization status inquiry response
     // void run_05_cmd_0x84(bool mode = NONVERBAL);  // TODO: tegelikult 08_0x84 Motion distance response
@@ -114,10 +114,10 @@ class Radar_MR24HPC1 {
     void run_08_cmd_0x84(bool mode = NONVERBAL);  // Motion distance
     void run_08_cmd_0x88(bool mode = NONVERBAL);  // Static energy threshold
     void run_08_cmd_0x89(bool mode = NONVERBAL);  // Motion energy threshold
-    void run_08_cmd_0x0A(bool mode = NONVERBAL);  // Static trigger range
-    void run_08_cmd_0x8A(bool mode = NONVERBAL);  // Static trigger range
-    void run_08_cmd_0x0B(bool mode = NONVERBAL);  // Motion trigger range
-    void run_08_cmd_0x8B(bool mode = NONVERBAL);  // Motion trigger range
+    void run_08_cmd_0x0A(bool mode = NONVERBAL);  // Static trigger limit
+    void run_08_cmd_0x8A(bool mode = NONVERBAL);  // Static trigger limit
+    void run_08_cmd_0x0B(bool mode = NONVERBAL);  // Motion trigger limit
+    void run_08_cmd_0x8B(bool mode = NONVERBAL);  // Motion trigger limit
     void run_08_cmd_0x0C(bool mode = NONVERBAL);  // Motion trigger time setting
     void run_08_cmd_0x8C(bool mode = NONVERBAL);  // Motion trigger time
     void run_08_cmd_0x0D(bool mode = NONVERBAL);  // Motion to still time setting
@@ -140,12 +140,12 @@ class Radar_MR24HPC1 {
     int mode = ADVANCED;  // 0 simple, 1 advanced
     int heartbeat = NONE;
 
-    int motion_to_still_time = 0;               // advanced
-    int time_for_entering_no_person_state = 0;  // advanced
+    int motion_to_static_time = 0;               // advanced
+    int time_for_entering_no_person_state = 0;  // advanced absence triger time
     int motion_trigger_time = 0;                 // advanced
 
-    int motion_trigger_range = 0;               // advanced
-    int static_trigger_range = 0;               // advanced
+    int motion_trigger_limit = 0;               // advanced
+    int static_trigger_limit = 0;               // advanced
 
     int motion_energy_threshold = 0;            // advanced
     int static_energy_threshold = 0;
@@ -178,51 +178,53 @@ class Radar_MR24HPC1 {
 
     void run(bool mode = NONVERBAL);  // process frames
 
-    void reset();                 // send reset frame
-    void ask_heartbeat();             // ask heartbeat frame
+    void reset();                     // x
+    void ask_heartbeat();             // x
     void ask_product_model();
     void ask_product_id();
     void ask_hardware_model();
     void ask_firmware_version();
-    void ask_initialization_status();  // Initialization status inquiry
+
+    void ask_initialization_status();  // x
     void ask_custom_mode();
 
-    void ask_presence();               // Occupation
+    void ask_presence();               // x Occupation
 
-    void ask_body_parameter();
-    void ask_absence_trigger_time();
-    void ask_direction();             // APPROACHING RECEDING
+    void ask_activity();               // x
+    void ask_absence_trigger_time();   // x
+    void ask_direction();              // x APPROACHING RECEDING
 
-    void ask_motion_energy();
-    void ask_motion_distance();
-    void ask_motion_range();           // advanced and simple
-    void ask_motion_speed();
+    void ask_motion_energy();          // x
+    void ask_motion_body_distance();   // x
+    void ask_motion_limit();           // x advanced and simple
+    void ask_motion_speed();           // x
 
-    void ask_motion();               // none, static, active
-    void ask_motion_trigger_time();
-    void ask_motion_to_still_time();
-    void ask_no_person_time();
+    void ask_motion();                 // x none, static, active
+    void ask_motion_trigger_time();    // x
+    void ask_motion_to_static_time();  // x
+    void ask_no_person_time();         // x
 
-    void ask_static_energy();
-    void ask_static_distance();
-    void ask_static_range();
+    void ask_static_energy();          // x
+    void ask_static_body_distance();   // x
+    void ask_static_limit();           // x
 
-    void set_motion_range(uint8_t range);    // simple + advanced
-    void set_static_range(uint8_t range);      // simple + advanced
-    void set_static_threshold(uint8_t range);  //
-    void set_motion_threshold(uint8_t range);  // 0-250
+    void set_motion_limit(uint8_t limit);    // simple + advanced
+    void set_static_limit(uint8_t limit);      // simple + advanced
+    void set_static_threshold(uint8_t limit);  //
+    void set_motion_threshold(uint8_t limit);  // 0-250
 
     void set_absence_trigger_time(uint8_t time);  // simple
 
     void start_custom_mode_settings(uint8_t mode);
     void end_custom_mode_settings();
 
+// ----------------------//
     int get_mode();                  // return radar mode
     int get_heartbeat();             // returns heartbeat counter value
-    
+
     // Works only in SIMPLE mode:
     int get_motion();
-    int get_activity();
+    int get_activity();  // body parameter
     int get_direction();
     int get_presence();
 
@@ -231,6 +233,12 @@ class Radar_MR24HPC1 {
     int   get_motion_distance();
     int   get_static_energy();
     int   get_static_distance();
+    int   get_initialization_status();
+    int   get_time_for_entering_no_person_state();
+    int   get_motion_trigger_time();
+    int   get_motion_to_static_time();
+    int   get_static_trigger_limit();
+
 };
 
 #endif  // LIB_RADAR_MR24HPC1_SRC_RADAR_MR24HPC1_H_

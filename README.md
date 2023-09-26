@@ -1,5 +1,7 @@
 # MR24HPC1 radar library
 
+![Seeed radar MR24HPC1](img/radar_2048.jpg)
+
 Arduino Library for [Seeed MR24HPC1 radar](https://www.seeedstudio.com/24GHz-mmWave-Sensor-Human-Static-Presence-Module-Lite-p-5524.html)
 
 It has two modes: simple and advanced.
@@ -21,7 +23,16 @@ get_motion_energy()  |      |   +
 get_motion_speed()   |      |   +
 get_motion_distance()|      |   +
 get_static_energy()  |      |   +
-get_static_distance()|      |   + 
+get_static_distance()|      |   +
+get_initialization_status()|  + |
+get_time_for_entering_no_person_state()| + | +
+get_motion_trigger_time()|   | +
+get_motion_to_static_time|   | +
+get_static_trigger_limit()|   | +
+set_static_limit()|   | +
+
+
+
 
 ## Initialice radar
 
@@ -114,7 +125,7 @@ Serial.print(radar.get_heartbeat());
 
 Works only in SIMPLE mode.
 
-Returns activity value from 0 to 250.
+Returns activity value from 0 to 100.
 
 ```c++
 Serial.println(radar.get_activity());
@@ -229,4 +240,110 @@ Returns the distance of the static body in cm. With a step 50cm.
 Serial.print("Static distance: ");
 Serial.print(radar.get_static_distance());
 Serial.println(" cm");
+```
+
+## get_initialization_status()
+
+Returns: 1 or 2
+
+```c++
+Serial.print("Initialization status: ");
+Serial.println(radar.get_initialization_status());
+```
+
+## get_time_for_entering_no_person_state()
+
+Returns time
+
+Default value 30000 ms.
+
+```c++
+Serial.print("Time for entering no person state: ");
+Serial.println(radar.get_time_for_entering_no_person_state());
+```
+
+## get_motion_trigger_time()
+
+Return time
+
+Default value 150 ms.
+
+```c++
+Serial.print("Motion trigger time: ");
+Serial.println(radar.get_motion_trigger_time());
+```
+
+## get_motion_to_static_time()
+
+Return time
+
+Default value 3000 ms.
+
+```c++
+Serial.print("Motion to static time: ");
+Serial.println(radar.get_motion_to_static_time());
+```
+
+## get_static_trigger_limit()
+
+Unit cm
+
+Default value 500 cm.
+
+```c++
+Serial.print("Static trigger distance limit: ");
+Serial.print(radar.get_static_trigger_limit());
+Serial.println(" cm");
+```
+
+## set_motion_limit(uint8_t limit)
+
+Max limit to recognize human body movements.
+
+In Simple mode:
+0x01 4.0-4.5 m detection radius
+0x02 3.5-4.0 m
+0x03 2.5-3.0 m
+0x04 3.0-3.5 m
+
+In Advandced mode:
+Motion trigger boundary settings
+0x01 0.5m
+0x02 1.0m
+0x03 1.5m
+0x04 2.0m
+0x05 2.5m
+0x06 3.0m
+0x07 3.5m
+0x08 4.0m
+0x09 4.5m
+0x0A 5.0m
+
+## set_static_limit(uint8_t limit)
+
+In Simple mode:
+
+- 0x01 is 4.0-4.5 m
+- 0x02 is 3.5-4.0 m
+- 0x03 is 2.5-3.0 m
+- 0x04 is 3.0-3.5 m
+
+In Advandced mode:
+
+- 0x01 is 0.5m
+- 0x02 is 1.0m
+- 0x03 is 1.5m
+- 0x04 is 2.0m
+- 0x05 is 2.5m
+- 0x06 is 3.0m
+- 0x07 is 3.5m
+- 0x08 is 4.0m
+- 0x09 is 4.5m
+- 0x0A is 5.0m
+
+```c++
+void setup() {
+  radar.set_mode(ADVANCED);
+  radar.set_static_limit(RANGE_300_CM);
+}
 ```

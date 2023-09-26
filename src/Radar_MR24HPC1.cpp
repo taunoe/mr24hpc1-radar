@@ -64,7 +64,6 @@ Adds headers
 */
 void Radar_MR24HPC1::print(int mode) {
   if (is_new_frame) {
-
     switch (mode) {
       case DEC:
         print_dec(frame, frame_len);
@@ -73,7 +72,6 @@ void Radar_MR24HPC1::print(int mode) {
         print_hex(frame, frame_len);
         break;
     }
-
     is_new_frame = false;
     frame[frame_len] = {0};  // set all data to zero
   }
@@ -212,25 +210,26 @@ Motion trigger boundary settings
 0x09 4.5m
 0x0A 5.0m
 */
-void Radar_MR24HPC1::set_motion_range(uint8_t range) {
+void Radar_MR24HPC1::set_motion_limit(uint8_t limit) {
   const int len = 10;
 
   if (mode == ADVANCED) {
-    if (range > 0x0A) {
-      range = 0x0A;  // default
+    if (limit > 0x0A) {
+      limit = 0x0A;
     }
-    uint8_t frame[len] = {
-      HEAD1, HEAD2, 0x08, 0x0B, 0x00, 0x01, range, 0x00, END1, END2};
-  } else {   // Simple mode
-    if (range < 1 || range > 4) {
-      range = 0x01;
+    uint8_t frame_a[len] = {
+      HEAD1, HEAD2, 0x08, 0x0B, 0x00, 0x01, limit, 0x00, END1, END2};
+    frame_a[I_DATA+1] = get_frame_sum(frame_a, len);
+    send_query(frame_a, len);
+  } else {
+    if (limit < 1 || limit > 4) {
+      limit = 0x01;
     }
-    uint8_t frame[len] = {
-      HEAD1, HEAD2, 0x05, 0x07, 0x00, 0x01, range, 0x00, END1, END2};
+    uint8_t frame_s[len] = {
+      HEAD1, HEAD2, 0x05, 0x07, 0x00, 0x01, limit, 0x00, END1, END2};
+    frame_s[I_DATA+1] = get_frame_sum(frame_s, len);
+    send_query(frame_s, len);
   }
-
-  frame[I_DATA+1] = get_frame_sum(frame, len);
-  send_query(frame, len);
 }
 
 /*
@@ -252,25 +251,33 @@ Existence perception boundary settings
 0x09 4.5m
 0x0A 5.0m
 */
-void Radar_MR24HPC1::set_static_range(uint8_t range) {
+void Radar_MR24HPC1::set_static_limit(uint8_t limit) {
+  // Start custom mode
+  start_custom_mode_settings(1);
+
   const int len = 10;
 
   if (mode == ADVANCED) {
-    if (range > 0x0A) {
-      range = 0x0A;  // default
+    if (limit > 0x0A) {
+      limit = 0x0A;  // default
     }
     uint8_t frame[len] = {
-      HEAD1, HEAD2, 0x08, 0x0A, 0x00, 0x01, range, 0x00, END1, END2};
-  } else {  // Simple mode
-    if (range < 1 || range > 3) {
-      range = 0x03;  // default
+      HEAD1, HEAD2, 0x08, 0x0A, 0x00, 0x01, limit, 0x00, END1, END2};
+    frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
+  } else {
+    if (limit < 1 || limit > 3) {
+      limit = 0x03;  // default
     }
     uint8_t frame[len] = {
-      HEAD1, HEAD2, 0x05, 0x08, 0x00, 0x01, range, 0x00, END1, END2};
+      HEAD1, HEAD2, 0x05, 0x08, 0x00, 0x01, limit, 0x00, END1, END2};
+    frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
   }
 
-  frame[I_DATA+1] = get_frame_sum(frame, len);
-  send_query(frame, len);
+  // save
+  end_custom_mode_settings();
+  //reset();
 }
 
 
@@ -334,8 +341,9 @@ void Radar_MR24HPC1::ask_motion() {
 
 /*
 Body movment parameter inquiry
+activity - body parameter
 */
-void Radar_MR24HPC1::ask_body_parameter() {
+void Radar_MR24HPC1::ask_activity() {
   const int len = 10;
   uint8_t frame[len] = {
     HEAD1, HEAD2, 0x80, 0x83, 0x00, 0x01, 0x0F, 0x00, END1, END2};
@@ -382,7 +390,7 @@ void Radar_MR24HPC1::ask_mode() {
 /*
 Static distance inquiry
 */
-void Radar_MR24HPC1::ask_static_distance() {
+void Radar_MR24HPC1::ask_static_body_distance() {
   const int len = 10;
   uint8_t frame[len] = {
     HEAD1, HEAD2, 0x08, 0x83, 0x00, 0x01, 0x0F, 0x00, END1, END2};
@@ -393,7 +401,7 @@ void Radar_MR24HPC1::ask_static_distance() {
 /*
 Motion distance inquiry
 */
-void Radar_MR24HPC1::ask_motion_distance() {
+void Radar_MR24HPC1::ask_motion_body_distance() {
   const int len = 10;
   uint8_t frame[len] = {
     HEAD1, HEAD2, 0x08, 0x84, 0x00, 0x01, 0x0F, 0x00, END1, END2};
@@ -461,13 +469,13 @@ void Radar_MR24HPC1::end_custom_mode_settings() {
 Existence judgement threshold settings
 Range 0-250
 */
-void Radar_MR24HPC1::set_static_threshold(uint8_t range) {
-  if (range > 250) {
-    range = 250;
+void Radar_MR24HPC1::set_static_threshold(uint8_t limit) {
+  if (limit > 250) {
+    limit = 250;
   }
   const int len = 10;
   uint8_t frame[len] = {
-    HEAD1, HEAD2, 0x08, 0x08, 0x00, 0x01, range, 0x00, END1, END2};
+    HEAD1, HEAD2, 0x08, 0x08, 0x00, 0x01, limit, 0x00, END1, END2};
   frame[I_DATA+1] = get_frame_sum(frame, len);
   send_query(frame, len);
 }
@@ -477,24 +485,26 @@ void Radar_MR24HPC1::set_static_threshold(uint8_t range) {
 Motion trigger threshold settings
 Range 0-250
 */
-void Radar_MR24HPC1::set_motion_threshold(uint8_t range) {
+void Radar_MR24HPC1::set_motion_threshold(uint8_t limit) {
   const int len = 10;
 
   if (mode == ADVANCED) {
-    if (range > 0x0A) {
-      range = 0x0A;
+    if (limit > 0x0A) {
+      limit = 0x0A;
     }
     uint8_t frame[len] = {
-      HEAD1, HEAD2, 0x08, 0x09, 0x00, 0x01, range, 0x00, END1, END2};
+      HEAD1, HEAD2, 0x08, 0x09, 0x00, 0x01, limit, 0x00, END1, END2};
+    frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
   } else {
-    if (range > 250) {
-      range = 250;
+    if (limit > 250) {
+      limit = 250;
     }
     uint8_t frame[len] = {
-      HEAD1, HEAD2, 0x08, 0x09, 0x00, 0x01, range, 0x00, END1, END2};
+      HEAD1, HEAD2, 0x08, 0x09, 0x00, 0x01, limit, 0x00, END1, END2};
+    frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
   }
-  frame[I_DATA+1] = get_frame_sum(frame, len);
-  send_query(frame, len);
 }
 
 
@@ -507,12 +517,14 @@ void Radar_MR24HPC1::ask_static_energy() {
   if (mode == ADVANCED) {
     uint8_t frame[len] = {
       HEAD1, HEAD2, 0x08, 0x88, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+    frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
   } else {
     uint8_t frame[len] = {
       HEAD1, HEAD2, 0x08, 0x81, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+    frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
   }
-  frame[I_DATA+1] = get_frame_sum(frame, len);
-  send_query(frame, len);
 }
 
 /*
@@ -525,51 +537,54 @@ void Radar_MR24HPC1::ask_motion_energy() {
   if (mode == ADVANCED) {
     uint8_t frame[len] = {
       HEAD1, HEAD2, 0x08, 0x89, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+    frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
   } else {
     uint8_t frame[len] = {
-     HEAD1, HEAD2, 0x08, 0x82, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+      HEAD1, HEAD2, 0x80, 0x83, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+    frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
   }
-
-  frame[I_DATA+1] = get_frame_sum(frame, len);
-  send_query(frame, len);
 }
 
 /*
 Existence perception boundry inquiry
 Sensitivity settings inquiry
 */
-void Radar_MR24HPC1::ask_static_range() {
+void Radar_MR24HPC1::ask_static_limit() {
   const int len = 10;
 
   if (mode == ADVANCED) {
-    uint8_t frame[len] = {
+    uint8_t _frame[len] = {
       HEAD1, HEAD2, 0x08, 0x8A, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+    _frame[I_DATA+1] = get_frame_sum(_frame, len);
+    send_query(_frame, len);
   } else {
-    uint8_t frame[len] = {
+    uint8_t _frame[len] = {
       HEAD1, HEAD2, 0x05, 0x88, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+    _frame[I_DATA+1] = get_frame_sum(_frame, len);
+    send_query(_frame, len);
   }
-
-  frame[I_DATA+1] = get_frame_sum(frame, len);
-  send_query(frame, len);
 }
 
 /*
 Motion trigger boundry inquiry
 Scene settings inquiry
 */
-void Radar_MR24HPC1::ask_motion_range() {
+void Radar_MR24HPC1::ask_motion_limit() {
   const int len = 10;
 
   if (mode == ADVANCED) {
     uint8_t frame[len] = {
       HEAD1, HEAD2, 0x08, 0x8B, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+    frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
   } else {
     uint8_t frame[len] = {
       HEAD1, HEAD2, 0x05, 0x87, 0x00, 0x01, 0x0F, 0x00, END1, END2};
+    frame[I_DATA+1] = get_frame_sum(frame, len);
+    send_query(frame, len);
   }
-
-  frame[I_DATA+1] = get_frame_sum(frame, len);
-  send_query(frame, len);
 }
 
 /*
@@ -591,7 +606,7 @@ void Radar_MR24HPC1::ask_motion_trigger_time() {
 /*
 Motion to still time inquiry
 */
-void Radar_MR24HPC1::ask_motion_to_still_time() {
+void Radar_MR24HPC1::ask_motion_to_static_time() {
   const int len = 10;
 
   if (mode == ADVANCED) {
@@ -602,7 +617,6 @@ void Radar_MR24HPC1::ask_motion_to_still_time() {
   } else {
     //
   }
-
 }
 
 /*
@@ -619,7 +633,6 @@ void Radar_MR24HPC1::ask_no_person_time() {
   } else {
     //
   }
-
 }
 
 /*
@@ -867,11 +880,11 @@ void Radar_MR24HPC1::run_05(bool mode) {
       run_05_cmd_0x01(mode);
       break;
     case 0x07:
-      // Motion range response
+      // Motion limit response
       run_05_cmd_0x07(mode);
       break;
     case 0x08:
-      // Static range response
+      // Static limit response
       run_05_cmd_0x08(mode);
       break;
     case 0x09:
@@ -891,7 +904,7 @@ void Radar_MR24HPC1::run_05(bool mode) {
       run_05_cmd_0x87(mode);
       break;
     case 0x88:
-      // Static range settings response
+      // Static limit settings response
       run_05_cmd_0x88(mode);
       break;
     case 0x89:
@@ -912,7 +925,7 @@ void Radar_MR24HPC1::run_05(bool mode) {
 Initialization completed
 */
 void Radar_MR24HPC1::run_05_cmd_0x01(bool mode) {
-  initialization_status = 0x01;  // Completed
+  initialization_status = 0x01;  // frame[I_DATA];  // Completed
 
   if (mode == VERBAL) {
     Serial.println("Initialization completed.");
@@ -920,55 +933,55 @@ void Radar_MR24HPC1::run_05_cmd_0x01(bool mode) {
 }
 
 /*
-Scene settings range response
-Motion trigger range response
+Scene settings limit response
+Motion trigger limit response
 */
 void Radar_MR24HPC1::run_05_cmd_0x07(bool mode) {
   if (frame[I_DATA] == 0x01) {
     // Living room 4-4.5m
-    motion_trigger_range = 450;  // cm
+    motion_trigger_limit = 450;  // cm
   } else if (frame[I_DATA] == 0x02) {
     // Bedroom 4m
-    motion_trigger_range = 400;  // cm
+    motion_trigger_limit = 400;  // cm
   } else if (frame[I_DATA] == 0x03) {
     // Bathroom 3m
-    motion_trigger_range = 300;  // cm
+    motion_trigger_limit = 300;  // cm
   } else if (frame[I_DATA] == 0x04) {
     // area detection 3.5m
-    motion_trigger_range = 350;  // cm
+    motion_trigger_limit = 350;  // cm
   } else if (frame[I_DATA] == 0x00) {
-    motion_trigger_range = 0;
+    motion_trigger_limit = 0;
   }
 
   if (mode == VERBAL) {
-    Serial.print("Motion trigger range: ");
-    Serial.print(motion_trigger_range);
+    Serial.print("Motion trigger limit: ");
+    Serial.print(motion_trigger_limit);
     Serial.println(" cm");
   }
 }
 
 /*
-Sensitivity settings range response
-Static trigger range response
+Sensitivity settings limit response
+Static trigger limit response
 */
 void Radar_MR24HPC1::run_05_cmd_0x08(bool mode) {
   if (frame[I_DATA] == 0x01) {
     // Level 1
-    static_trigger_range = 250;  // cm
+    static_trigger_limit = 250;  // cm
   } else if (frame[I_DATA] == 0x02) {
     // Level 2
-    static_trigger_range = 300;  // cm
+    static_trigger_limit = 300;  // cm
   } else if (frame[I_DATA] == 0x03) {
     // Level 3
-    static_trigger_range = 400;  // cm
+    static_trigger_limit = 400;  // cm
   } else if (frame[I_DATA] == 0x00) {
     // Level 0
-    static_trigger_range = 0;  // cm
+    static_trigger_limit = 0;  // cm
   }
 
   if (mode == VERBAL) {
-    Serial.print("Static trigger range: ");
-    Serial.print(static_trigger_range);
+    Serial.print("Static trigger limit: ");
+    Serial.print(static_trigger_limit);
     Serial.println(" cm");
   }
 }
@@ -1040,30 +1053,30 @@ Scene settings response
 void Radar_MR24HPC1::run_05_cmd_0x87(bool mode) {
   if (frame[I_DATA] == 0x01) {
     // Living room 4-4.5m
-    motion_trigger_range = 450;  // cm
+    motion_trigger_limit = 450;  // cm
   } else if (frame[I_DATA] == 0x02) {
     // Bedroom 4m
-    motion_trigger_range = 400;  // cm
+    motion_trigger_limit = 400;  // cm
   } else if (frame[I_DATA] == 0x03) {
     // Bathroom 3m
-    motion_trigger_range = 300;  // cm
+    motion_trigger_limit = 300;  // cm
   } else if (frame[I_DATA] == 0x04) {
     // area detection 3.5m
-    motion_trigger_range = 350;  // cm
+    motion_trigger_limit = 350;  // cm
   } else if (frame[I_DATA] == 0x00) {
-    motion_trigger_range = 0;
+    motion_trigger_limit = 0;
   }
 
   if (mode == VERBAL) {
-    Serial.print("Motion trigger range: ");
-    Serial.print(motion_trigger_range);
+    Serial.print("Motion trigger limit: ");
+    Serial.print(motion_trigger_limit);
     Serial.println(" cm");
   }
 }
 
 /*
 Sensitivity settings response
-Static range settings response
+Static limit settings response
 0x00 not set
 0x01 level 1
 0x02 level 2
@@ -1072,21 +1085,21 @@ Static range settings response
 void Radar_MR24HPC1::run_05_cmd_0x88(bool mode) {
   if (frame[I_DATA] == 0x01) {
     // Level 1
-    static_trigger_range = 250;  // cm
+    static_trigger_limit = 250;  // cm
   } else if (frame[I_DATA] == 0x02) {
     // Level 2
-    static_trigger_range = 300;  // cm
+    static_trigger_limit = 300;  // cm
   } else if (frame[I_DATA] == 0x03) {
     // Level 3
-    static_trigger_range = 400;  // cm
+    static_trigger_limit = 400;  // cm
   } else if (frame[I_DATA] == 0x00) {
     // Level 0
-    static_trigger_range = 0;  // cm
+    static_trigger_limit = 0;  // cm
   }
 
   if (mode == VERBAL) {
-    Serial.print("Static trigger range: ");
-    Serial.print(static_trigger_range);
+    Serial.print("Static trigger limit: ");
+    Serial.print(static_trigger_limit);
     Serial.println(" cm");
   }
 }
@@ -1156,16 +1169,16 @@ void Radar_MR24HPC1::run_08(bool mode) {
       run_08_cmd_0x89(mode);  // Motion energy threshold
       break;
     case 0x0A:
-      run_08_cmd_0x0A(mode);  // Static trigger range settings
+      run_08_cmd_0x0A(mode);  // Static trigger limit settings
       break;
     case 0x8A:
-      run_08_cmd_0x8A(mode);  // Static trigger range
+      run_08_cmd_0x8A(mode);  // Static trigger limit
       break;
     case 0x0B:
-      run_08_cmd_0x0B(mode);  // Motion trigger range settings
+      run_08_cmd_0x0B(mode);  // Motion trigger limit settings
       break;
      case 0x8B:
-      run_08_cmd_0x8B(mode);  // Motion trigger range
+      run_08_cmd_0x8B(mode);  // Motion trigger limit
       break;
     case 0x0C:
       run_08_cmd_0x0C(mode);  // Trigger time setting
@@ -1352,15 +1365,15 @@ void Radar_MR24HPC1::run_08_cmd_0x09(bool mode) {
 }
 
 /*
-Static trigger range
+Static trigger limit
 */
 void Radar_MR24HPC1::run_08_cmd_0x8A(bool mode) {
   uint8_t data = frame[I_DATA];
-  static_trigger_range = calculate_distance_cm(data);
+  static_trigger_limit = calculate_distance_cm(data);
 
   if (mode == VERBAL) {
-    Serial.print("Static trigger range: ");
-    Serial.print(static_trigger_range);  // 0-1000ms
+    Serial.print("Static trigger limit: ");
+    Serial.print(static_trigger_limit);  // 0-1000ms
     Serial.println(" cm");
   }
 }
@@ -1370,15 +1383,15 @@ void Radar_MR24HPC1::run_08_cmd_0x0A(bool mode) {
 }
 
 /*
-Motion trigger range
+Motion trigger limit
 */
 void Radar_MR24HPC1::run_08_cmd_0x8B(bool mode) {
   uint8_t data = frame[I_DATA];
-  motion_trigger_range = calculate_distance_cm(data);
+  motion_trigger_limit = calculate_distance_cm(data);
 
   if (mode == VERBAL) {
-    Serial.print("Motion trigger range: ");
-    Serial.print(motion_trigger_range);
+    Serial.print("Motion trigger limit: ");
+    Serial.print(motion_trigger_limit);
     Serial.println(" cm");
   }
 }
@@ -1420,11 +1433,11 @@ Motion to still time setting
 */
 void Radar_MR24HPC1::run_08_cmd_0x0D(bool mode) {
   const unsigned char time_data[4] = {frame[6], frame[7], frame[8], frame[9]};
-  motion_to_still_time = calculate_time(time_data, 4);
+  motion_to_static_time = calculate_time(time_data, 4);
 
   if (mode == VERBAL) {
-    Serial.print("Motion to still time: ");
-    Serial.print(motion_to_still_time);  // 1-60s
+    Serial.print("Motion to static time: ");
+    Serial.print(motion_to_static_time);  // 1-60s
     Serial.println(" ms");
   }
 }
@@ -1434,11 +1447,11 @@ Motion to still time
 */
 void Radar_MR24HPC1::run_08_cmd_0x8D(bool mode) {
   const unsigned char time_data[4] = {frame[6], frame[7], frame[8], frame[9]};
-  motion_to_still_time = calculate_time(time_data, 4);
+  motion_to_static_time = calculate_time(time_data, 4);
 
   if (mode == VERBAL) {
-    Serial.print("Motion to still time: ");
-    Serial.print(motion_to_still_time);  // 1-60s
+    Serial.print("Motion to static time: ");
+    Serial.print(motion_to_static_time);  // 1-60s
     Serial.println(" ms");
   }
 }
@@ -1546,7 +1559,7 @@ void Radar_MR24HPC1::run_80_cmd_0x02(bool mode) {
 
 /*
 Active reporting of body movement parameter report
-0-100
+Activity 0-100 body parameter
 */
 void Radar_MR24HPC1::run_80_cmd_0x03(bool mode) {
   activity = frame[I_DATA];
@@ -1600,7 +1613,7 @@ void Radar_MR24HPC1::run_80_cmd_0x82(bool mode) {
 
 /*
 Body movement parameter inquiry report
-Actifity
+Actifity - Body parameter
 0-100%
 */
 void Radar_MR24HPC1::run_80_cmd_0x83(bool mode) {
@@ -1773,6 +1786,7 @@ SIMPLE mode
 Returns activity value from 0 to 250
 */
 int Radar_MR24HPC1::get_activity() {
+  ask_activity();
   return activity;
 }
 
@@ -1784,7 +1798,7 @@ Returns
 Otherwise returns 0.
 */
 int Radar_MR24HPC1::get_direction() {
-  //ask_direction();
+  // ask_direction();
   return direction;
 }
 
@@ -1834,7 +1848,7 @@ ADVANDSED mode
 Returns the distance of the moving body in cm
 */
 int Radar_MR24HPC1::get_motion_distance() {
-  ask_motion_distance();
+  ask_motion_body_distance();
   return motion_distance;
 }
 
@@ -1852,6 +1866,46 @@ ADVANDSED mode
 Returns the distance of the static body in cm
 */
 int Radar_MR24HPC1::get_static_distance() {
-  ask_static_distance();
+  ask_static_body_distance();
   return static_distance;
+}
+
+/*
+*/
+int Radar_MR24HPC1::get_initialization_status() {
+  ask_initialization_status();
+  return initialization_status;
+}
+
+/*
+*/
+int Radar_MR24HPC1::get_time_for_entering_no_person_state() {
+  if (mode == SIMPLE) {
+    ask_absence_trigger_time();
+  } else {
+    ask_no_person_time();
+  }
+
+  return time_for_entering_no_person_state;
+}
+
+/*
+*/
+int Radar_MR24HPC1::get_motion_trigger_time() {
+  ask_motion_trigger_time();
+  return motion_trigger_time;
+}
+
+/*
+*/
+int Radar_MR24HPC1::get_motion_to_static_time() {
+  ask_motion_to_static_time();
+  return motion_to_static_time;
+}
+
+/*
+*/
+int Radar_MR24HPC1::get_static_trigger_limit() {
+  ask_static_limit();
+  return static_trigger_limit;
 }
