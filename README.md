@@ -1,14 +1,14 @@
-# MR24HPC1 radar library
+# Arduino library for Seeed MR24HPC1 24GHz radar
+
+Arduino Library for [Seeed 24GHz mmWave Human Static Presence Lite MR24HPC1 radar sensor](https://www.seeedstudio.com/24GHz-mmWave-Sensor-Human-Static-Presence-Module-Lite-p-5524.html)
 
 ![Seeed radar MR24HPC1](img/radar_github.jpg)
-
-Arduino Library for [Seeed MR24HPC1 radar](https://www.seeedstudio.com/24GHz-mmWave-Sensor-Human-Static-Presence-Module-Lite-p-5524.html)
 
 It has two modes: simple and advanced.
 
 In order not to block incoming radar data it's recommended not to use delays. Use millis() instead.
 
-Functions that only work in simple or advanfced mode:
+Functions that only work in simple or advanced mode:
 
 Functions            |SIMPLE|ADVANDCED
 ---------------------|------|---------
@@ -48,7 +48,7 @@ Set radar to simple mode:
 radar.set_mode(SIMPLE);
 ```
 
-Set radar to advandced mode:
+Set radar to advanced mode:
 
 ```c++
 radar.set_mode(ADVANCED);
@@ -71,7 +71,7 @@ if (radar.get_mode() == ADVANCED) {
 
 ## run()
 
-In the main loop should execute _radar.run()_ command.
+In the main loop, it should execute _radar.run()_ command.
 
 It takes all incoming data frames from radar, extracts data and saves them to parameters. So that they are quickly available if you need them.
 
@@ -115,7 +115,7 @@ void loop() {
 
 ## get_heartbeat()
 
-Returns heartbeat counter value. Changes once a minute.
+Returns heartbeat counter value — changes once a minute.
 
 ```c++
 Serial.print(radar.get_heartbeat());
@@ -135,9 +135,9 @@ Serial.println(radar.get_activity());
 
 Works only in SIMPLE mode.
 
-Returns 1 (APPROACHING) when human body moves closer.
-Returns 2 (RECEDING) when human body moves away from radar.
-Otherwise returns 0.
+Returns 1 (APPROACHING) when the human body moves closer.
+Returns 2 (RECEDING) when the human body moves away from the radar.
+Otherwise, it returns 0.
 
 ```c++
 if (radar.get_direction() == APPROACHING) {
@@ -186,7 +186,7 @@ if (radar.get_presence() == OCCUPIED) {
 
 ## get_motion_energy()
 
-Works only in ADVANDSED mode.
+Works only in ADVANCED mode.
 
 Returns motion energy value from 0 to 250.
 
@@ -197,7 +197,7 @@ Serial.println(radar.get_motion_energy());
 
 ## get_motion_speed()
 
-Works only in ADVANDSED mode.
+Works only in ADVANCED mode.
 
 Returns motion speed in m/s. Negative if the object is moving towards the radar. Positive if the object is moving away from the radar.
 
@@ -209,7 +209,7 @@ Serial.println(" m/s");
 
 ## get_motion_distance()
 
-Works only in ADVANDSED mode.
+Works only in ADVANCED mode.
 
 Returns the distance of the moving body in cm. With a step 50cm.
 
@@ -221,7 +221,7 @@ Serial.println(" cm");
 
 ## get_static_energy()
 
-Works only in ADVANDSED mode.
+Works only in ADVANCED mode.
 
 Returns static body energy value from 0 to 250.
 
@@ -232,7 +232,7 @@ Serial.println(radar.get_static_energy());
 
 ## get_static_distance()
 
-Works only in ADVANDSED mode.
+Works only in ADVANCED mode.
 
 Returns the distance of the static body in cm. With a step 50cm.
 
