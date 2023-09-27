@@ -208,12 +208,12 @@ class Radar_MR24HPC1 {
     void ask_static_body_distance();   // x
     void ask_static_limit();           // x
 
-    void set_motion_limit(uint8_t limit);    // simple + advanced
-    void set_static_limit(uint8_t limit);      // simple + advanced
+    void set_motion_limit(uint8_t limit);      // x  simple + advanced
+    void set_static_limit(uint8_t limit);      // x simple + advanced
     void set_static_threshold(uint8_t limit);  //
     void set_motion_threshold(uint8_t limit);  // 0-250
 
-    void set_absence_trigger_time(uint8_t time);  // simple
+    void set_absence_trigger_time(int time_ms);  // simple
 
     void start_custom_mode_settings(uint8_t mode);
     void end_custom_mode_settings();

@@ -30,7 +30,10 @@ get_motion_trigger_time()|   | +
 get_motion_to_static_time|   | +
 get_static_trigger_limit()|   | +
 set_static_limit()|   | +
-
+set_motion_limit()|   | +
+set_static_threshold|   | +
+set_motion_threshold|   |  +
+set_absence_trigger_time|   | +
 
 ## Libary Methods
 
@@ -353,5 +356,42 @@ In Advandced mode:
 void setup() {
   radar.set_mode(ADVANCED);
   radar.set_static_limit(RANGE_300_CM);
+}
+```
+
+### set_static_threshold(uint8_t limit)
+
+Set static trigger energy threshold value from 0 to 250.
+
+Default value is 33.
+
+```c++
+void setup() {
+  radar.set_mode(ADVANCED);
+  radar.set_static_threshold(33);
+}
+```
+
+### set_motion_threshold(uint8_t limit)
+
+Set motion trigger energy threshold value from 0 to 250.
+
+Default value is 4.
+
+```c++
+void setup() {
+  radar.set_mode(ADVANCED);
+  radar.set_motion_threshold(4);
+}
+```
+
+### set_absence_trigger_time(int time_ms)
+
+Default value is 30000ms.
+
+```c++
+void setup() {
+  radar.set_mode(ADVANCED);
+  radar.set_absence_trigger_time(30000);
 }
 ```

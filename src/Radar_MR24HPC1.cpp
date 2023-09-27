@@ -310,15 +310,29 @@ Time for entering no person state setting
 0x07 30 min
 0x08 60 min
 */
-void Radar_MR24HPC1::set_absence_trigger_time(uint8_t time) {
-  if (time > 0x08) {
-    time = 0x02;
+void Radar_MR24HPC1::set_absence_trigger_time(int time_ms) {
+  uint8_t hex[4] = {0};
+
+  if (time_ms < 0 || time_ms > 0xFFFFFF) {
+    time_ms = 0;
   }
-  const int len = 10;
+  // Extract each byte from the time_ms value and store it in the hex array
+  for (int i = 3; i >= 0; i--) {
+    hex[i] = static_cast<unsigned char>(time_ms & 0xFF);
+    time_ms >>= 8; // Shift right by 8 bits to get the next byte
+  }
+
+  // Start custom mode
+  start_custom_mode_settings(1);
+
+  const int len = 13;
   uint8_t frame[len] = {
-    HEAD1, HEAD2, 0x80, 0x0A, 0x00, 0x01, time, 0x00, END1, END2};
+    HEAD1, HEAD2, 0x80, 0x0A, 0x00, 0x01, hex[0], hex[1], hex[2], hex[3], 0x00, END1, END2};
   frame[I_DATA+1] = get_frame_sum(frame, len);
   send_query(frame, len);
+
+  // save
+  end_custom_mode_settings();
 }
 
 /*
@@ -480,10 +494,17 @@ void Radar_MR24HPC1::set_static_threshold(uint8_t limit) {
     limit = 250;
   }
   const int len = 10;
+
+  // Start custom mode
+  start_custom_mode_settings(1);
+
   uint8_t frame[len] = {
     HEAD1, HEAD2, 0x08, 0x08, 0x00, 0x01, limit, 0x00, END1, END2};
   frame[I_DATA+1] = get_frame_sum(frame, len);
   send_query(frame, len);
+
+  // save
+  end_custom_mode_settings();
 }
 
 
@@ -493,6 +514,13 @@ Range 0-250
 */
 void Radar_MR24HPC1::set_motion_threshold(uint8_t limit) {
   const int len = 10;
+
+  if (limit > 250) {
+    limit = 250;
+  }
+
+  // Start custom mode
+  start_custom_mode_settings(1);
 
   if (mode == ADVANCED) {
     if (limit > 0x0A) {
@@ -511,6 +539,8 @@ void Radar_MR24HPC1::set_motion_threshold(uint8_t limit) {
     frame[I_DATA+1] = get_frame_sum(frame, len);
     send_query(frame, len);
   }
+  // save
+  end_custom_mode_settings();
 }
 
 
