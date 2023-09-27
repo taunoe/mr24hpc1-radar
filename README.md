@@ -32,15 +32,15 @@ get_static_trigger_limit()|   | +
 set_static_limit()|   | +
 
 
+## Libary Methods
 
-
-## Initialice radar
+### Initialice radar
 
 ```c++
 Radar_MR24HPC1 radar = Radar_MR24HPC1(&Serial1);
 ```
 
-## set_mode()
+### set_mode()
 
 Set radar to simple mode:
 
@@ -54,7 +54,7 @@ Set radar to advanced mode:
 radar.set_mode(ADVANCED);
 ```
 
-## get_mode()
+### get_mode()
 
 Returns rada mode:
 
@@ -69,7 +69,7 @@ if (radar.get_mode() == ADVANCED) {
 }
 ```
 
-## run()
+### run()
 
 In the main loop, it should execute _radar.run()_ command.
 
@@ -113,7 +113,7 @@ void loop() {
 
 ![run advandsed verbal](img/run_advanced_verbal.png)
 
-## get_heartbeat()
+### get_heartbeat()
 
 Returns heartbeat counter value — changes once a minute.
 
@@ -121,7 +121,7 @@ Returns heartbeat counter value — changes once a minute.
 Serial.print(radar.get_heartbeat());
 ```
 
-## get_activity()
+### get_activity()
 
 Works only in SIMPLE mode.
 
@@ -131,7 +131,7 @@ Returns activity value from 0 to 100.
 Serial.println(radar.get_activity());
 ```
 
-## get_direction()
+### get_direction()
 
 Works only in SIMPLE mode.
 
@@ -147,7 +147,7 @@ if (radar.get_direction() == APPROACHING) {
 }
 ```
 
-## get_motion()
+### get_motion()
 
 Works only in SIMPLE mode.
 
@@ -167,7 +167,7 @@ if (radar.get_motion() == MOTION) {
 }
 ```
 
-## get_presence()
+### get_presence()
 
 Works only in SIMPLE mode.
 
@@ -184,7 +184,7 @@ if (radar.get_presence() == OCCUPIED) {
 }
 ```
 
-## get_motion_energy()
+### get_motion_energy()
 
 Works only in ADVANCED mode.
 
@@ -195,7 +195,7 @@ Serial.print("Motion energy: ");
 Serial.println(radar.get_motion_energy());
 ```
 
-## get_motion_speed()
+### get_motion_speed()
 
 Works only in ADVANCED mode.
 
@@ -207,7 +207,7 @@ Serial.print(radar.get_motion_speed());
 Serial.println(" m/s");
 ```
 
-## get_motion_distance()
+### get_motion_distance()
 
 Works only in ADVANCED mode.
 
@@ -219,7 +219,7 @@ Serial.print(radar.get_motion_distance());
 Serial.println(" cm");
 ```
 
-## get_static_energy()
+### get_static_energy()
 
 Works only in ADVANCED mode.
 
@@ -230,7 +230,7 @@ Serial.print("Static body energy: ");
 Serial.println(radar.get_static_energy());
 ```
 
-## get_static_distance()
+### get_static_distance()
 
 Works only in ADVANCED mode.
 
@@ -242,7 +242,7 @@ Serial.print(radar.get_static_distance());
 Serial.println(" cm");
 ```
 
-## get_initialization_status()
+### get_initialization_status()
 
 Returns: 1 or 2
 
@@ -251,7 +251,7 @@ Serial.print("Initialization status: ");
 Serial.println(radar.get_initialization_status());
 ```
 
-## get_time_for_entering_no_person_state()
+### get_time_for_entering_no_person_state()
 
 Returns time
 
@@ -262,7 +262,7 @@ Serial.print("Time for entering no person state: ");
 Serial.println(radar.get_time_for_entering_no_person_state());
 ```
 
-## get_motion_trigger_time()
+### get_motion_trigger_time()
 
 Return time
 
@@ -273,7 +273,7 @@ Serial.print("Motion trigger time: ");
 Serial.println(radar.get_motion_trigger_time());
 ```
 
-## get_motion_to_static_time()
+### get_motion_to_static_time()
 
 Return time
 
@@ -284,7 +284,7 @@ Serial.print("Motion to static time: ");
 Serial.println(radar.get_motion_to_static_time());
 ```
 
-## get_static_trigger_limit()
+### get_static_trigger_limit()
 
 Unit cm
 
@@ -296,7 +296,7 @@ Serial.print(radar.get_static_trigger_limit());
 Serial.println(" cm");
 ```
 
-## set_motion_limit(uint8_t limit)
+### set_motion_limit(uint8_t limit)
 
 Max limit to recognize human body movements.
 
@@ -327,7 +327,7 @@ void setup() {
 }
 ```
 
-## set_static_limit(uint8_t limit)
+### set_static_limit(uint8_t limit)
 
 In Simple mode:
 
