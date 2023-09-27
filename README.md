@@ -23,17 +23,17 @@ get_motion_energy()  |      |   +
 get_motion_speed()   |      |   +
 get_motion_distance()|      |   +
 get_static_energy()  |      |   +
-get_static_distance()|      |   +
-get_initialization_status()|  + |
+get_static_distance()               |      | +
+get_initialization_status()            | + |
 get_time_for_entering_no_person_state()| + | +
-get_motion_trigger_time()|   | +
-get_motion_to_static_time|   | +
-get_static_trigger_limit()|   | +
-set_static_limit()|   | +
-set_motion_limit()|   | +
-set_static_threshold|   | +
-set_motion_threshold|   |  +
-set_absence_trigger_time|   | +
+get_motion_trigger_time()              |   | +
+get_motion_to_static_time              |   | +
+get_static_trigger_limit()             |   | +
+set_static_limit()                     |   | +
+set_motion_limit()                     |   | +
+set_static_threshold                   |   | +
+set_motion_threshold                   |   | +
+set_absence_trigger_time               |   | +
 
 ## Libary Methods
 
