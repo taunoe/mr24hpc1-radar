@@ -228,11 +228,11 @@ class Radar_MR24HPC1 {
     int get_direction();
     int get_presence();
 
-    int   get_motion_energy();
-    float get_motion_speed();
-    int   get_motion_distance();
-    int   get_static_energy();
-    int   get_static_distance();
+    int   get_motion_energy(bool ask = false);
+    float get_motion_speed(bool ask = false);
+    int   get_motion_distance(bool ask = false);
+    int   get_static_energy(bool ask = false);
+    int   get_static_distance(bool ask = false);
     int   get_initialization_status();
     int   get_time_for_entering_no_person_state();
     int   get_motion_trigger_time();

@@ -882,7 +882,7 @@ TODO: Product info
 */
 void Radar_MR24HPC1::run_02(bool mode) {
   int cmd_word = frame[I_CMD_WORD];
-  int len = frame[I_LENGHT_L];
+  // int len = frame[I_LENGHT_L];
 
   switch (cmd_word) {
     case 0xA1:
@@ -1865,8 +1865,10 @@ int Radar_MR24HPC1::get_presence() {
 ADVANDSED mode
 Returns motion energy value from 0 to 250.
 */
-int Radar_MR24HPC1::get_motion_energy() {
-  ask_motion_energy();
+int Radar_MR24HPC1::get_motion_energy(bool ask) {
+  if (ask) {
+    ask_motion_energy();
+  }
   return motion_energy;
 }
 
@@ -1874,8 +1876,10 @@ int Radar_MR24HPC1::get_motion_energy() {
 ADVANDSED mode
 Returns motion speed in m/s
 */
-float Radar_MR24HPC1::get_motion_speed() {
-  ask_motion_speed();
+float Radar_MR24HPC1::get_motion_speed(bool ask) {
+  if (ask) {
+    ask_motion_speed();
+  }
   return motion_speed;
 }
 
@@ -1883,8 +1887,10 @@ float Radar_MR24HPC1::get_motion_speed() {
 ADVANDSED mode
 Returns the distance of the moving body in cm
 */
-int Radar_MR24HPC1::get_motion_distance() {
-  ask_motion_body_distance();
+int Radar_MR24HPC1::get_motion_distance(bool ask) {
+  if (ask) {
+    ask_motion_body_distance();
+  }
   return motion_distance;
 }
 
@@ -1892,8 +1898,10 @@ int Radar_MR24HPC1::get_motion_distance() {
 ADVANDSED mode
 Returns static body energy value from 0 to 250.
 */
-int Radar_MR24HPC1::get_static_energy() {
-  ask_static_energy();
+int Radar_MR24HPC1::get_static_energy(bool ask) {
+  if (ask) {
+    ask_static_energy();
+  }
   return static_energy;
 }
 
@@ -1901,8 +1909,10 @@ int Radar_MR24HPC1::get_static_energy() {
 ADVANDSED mode
 Returns the distance of the static body in cm
 */
-int Radar_MR24HPC1::get_static_distance() {
-  ask_static_body_distance();
+int Radar_MR24HPC1::get_static_distance(bool ask) {
+  if (ask) {
+    ask_static_body_distance();
+  }
   return static_distance;
 }
 
