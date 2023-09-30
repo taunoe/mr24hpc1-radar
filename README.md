@@ -10,7 +10,7 @@ In order not to block incoming radar data it's recommended not to use delays. Us
 
 Functions that only work in simple or advanced mode:
 
-Functions            |SIMPLE|ADVANDCED
+Functions            |SIMPLE|ADVANCED
 ---------------------|------|---------
 reset()              |  +   |   +
 get_mode()           |  +   |   +
@@ -363,7 +363,7 @@ void setup() {
 
 Set static trigger energy threshold value from 0 to 250.
 
-Default value is 33.
+The default value is 33.
 
 ```c++
 void setup() {
@@ -376,7 +376,7 @@ void setup() {
 
 Set motion trigger energy threshold value from 0 to 250.
 
-Default value is 4.
+The default value is 4.
 
 ```c++
 void setup() {
@@ -387,7 +387,7 @@ void setup() {
 
 ### set_absence_trigger_time(int time_ms)
 
-Default value is 30000ms.
+The default value is 30000ms.
 
 ```c++
 void setup() {
